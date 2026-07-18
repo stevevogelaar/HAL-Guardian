@@ -98,49 +98,59 @@ elif page == "Code Guardian":
             st.info(f"Saved to {tmp_path}")
             if st.button("Review uploaded file"):
                 with st.spinner(f"Asking {global_model} to review locally..."):
-                    result = review_file(str(tmp_path), model=global_model)
-                st.success(f"Status: {result.execution_status}")
-                st.write(f"**Verdict:** `{result.verdict}`")
-                st.write(f"**Model:** {result.model}")
-                st.json(result.summary_table)
-                st.markdown("### Structured findings")
-                if result.findings:
-                    for idx, f in enumerate(result.findings):
-                        with st.expander(f"{f.severity.upper()} — {f.category} (line {f.line})"):
-                            st.write(f.description)
-                            st.markdown(f"**Recommendation:** {f.recommendation}")
-                            if f.severity in ("critical", "high", "medium"):
-                                if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_upload_{idx}"):
-                                    with st.spinner(f"Asking {global_model} for a safe fix..."):
-                                        fix = suggest_fix_for_finding(result.raw_response or code, result.language, f, model=global_model)
-                                    st.markdown("**Suggested fix (review before using):**")
-                                    st.code(fix, language=result.language)
-                with st.expander("Raw review (Markdown)"):
-                    st.text(result.raw_response)
+                    st.session_state["cg_upload_result"] = review_file(str(tmp_path), model=global_model).model_dump()
+
+        if "cg_upload_result" in st.session_state:
+            result = st.session_state["cg_upload_result"]
+            st.success(f"Status: {result['execution_status']}")
+            st.write(f"**Verdict:** `{result['verdict']}`")
+            st.write(f"**Model:** {result['model']}")
+            st.json(result["summary_table"])
+            st.markdown("### Structured findings")
+            if result["findings"]:
+                for idx, f in enumerate(result["findings"]):
+                    with st.expander(f"{f['severity'].upper()} — {f['category']} (line {f['line']})"):
+                        st.write(f["description"])
+                        st.markdown(f"**Recommendation:** {f['recommendation']}")
+                        if f["severity"] in ("critical", "high", "medium"):
+                            if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_upload_{idx}"):
+                                with st.spinner(f"Asking {global_model} for a safe fix..."):
+                                    from hal_guardian.models import Finding
+                                    finding = Finding(**f)
+                                    fix = suggest_fix_for_finding(result["raw_response"], result["language"], finding, model=global_model)
+                                st.markdown("**Suggested fix (review before using):**")
+                                st.code(fix, language=result["language"])
+            with st.expander("Raw review (Markdown)"):
+                st.text(result["raw_response"])
     else:
         code = st.text_area("Paste code to review", height=300)
         language = st.text_input("Language", value="python")
         if st.button("Review pasted code") and code:
             with st.spinner(f"Asking {global_model} to review locally..."):
-                result = review_code(code, language, model=global_model)
-            st.success(f"Status: {result.execution_status}")
-            st.write(f"**Verdict:** `{result.verdict}`")
-            st.write(f"**Model:** {result.model}")
-            st.json(result.summary_table)
+                st.session_state["cg_paste_result"] = review_code(code, language, model=global_model).model_dump()
+
+        if "cg_paste_result" in st.session_state:
+            result = st.session_state["cg_paste_result"]
+            st.success(f"Status: {result['execution_status']}")
+            st.write(f"**Verdict:** `{result['verdict']}`")
+            st.write(f"**Model:** {result['model']}")
+            st.json(result["summary_table"])
             st.markdown("### Structured findings")
-            if result.findings:
-                for idx, f in enumerate(result.findings):
-                    with st.expander(f"{f.severity.upper()} — {f.category} (line {f.line})"):
-                        st.write(f.description)
-                        st.markdown(f"**Recommendation:** {f.recommendation}")
-                        if f.severity in ("critical", "high", "medium"):
+            if result["findings"]:
+                for idx, f in enumerate(result["findings"]):
+                    with st.expander(f"{f['severity'].upper()} — {f['category']} (line {f['line']})"):
+                        st.write(f["description"])
+                        st.markdown(f"**Recommendation:** {f['recommendation']}")
+                        if f["severity"] in ("critical", "high", "medium"):
                             if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_paste_{idx}"):
                                 with st.spinner(f"Asking {global_model} for a safe fix..."):
-                                    fix = suggest_fix_for_finding(code, result.language, f, model=global_model)
+                                    from hal_guardian.models import Finding
+                                    finding = Finding(**f)
+                                    fix = suggest_fix_for_finding(code, result["language"], finding, model=global_model)
                                 st.markdown("**Suggested fix (review before using):**")
-                                st.code(fix, language=result.language)
+                                st.code(fix, language=result["language"])
             with st.expander("Raw review (Markdown)"):
-                st.text(result.raw_response)
+                st.text(result["raw_response"])
 
 elif page == "Trust Shield":
     st.subheader("Trust Shield — Untrusted Input Scanner")
