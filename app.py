@@ -16,6 +16,22 @@ from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR, get_available_mod
 from hal_guardian.code_guardian import review_file, review_code, suggest_fix_for_finding
 from hal_guardian.trust_shield import scan_input
 from hal_guardian.document_extractor import extract_from_file
+from hal_guardian.webfetch import fetch_url, strip_html_to_text, extract_code_blocks
+from hal_guardian.memory import (
+    get_webfetch_enabled,
+    set_webfetch_enabled,
+    get_webfetch_max_size,
+    set_webfetch_max_size,
+    get_webfetch_confirm,
+    set_webfetch_confirm,
+    list_whitelist,
+    add_whitelist,
+    remove_whitelist,
+    list_blacklist,
+    add_blacklist,
+    remove_blacklist,
+    seed_defaults,
+)
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
 
@@ -30,7 +46,7 @@ with st.sidebar:
     st.title(f"{APP_ICON} {APP_TITLE}")
     page = st.radio(
         "Choose a module",
-        ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground", "Manual"],
+        ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground", "Settings", "Manual"],
     )
     st.divider()
 
@@ -88,7 +104,12 @@ elif page == "Code Guardian":
 
     All review data is logged to `audits/hal-guardian-audit.jsonl`.
     """)
-    mode = st.radio("Input mode", ["Upload a file", "Paste code"])
+    cg_options = ["Upload a file", "Paste code"]
+    if get_webfetch_enabled():
+        cg_options.append("Fetch URL")
+    mode = st.radio("Input mode", cg_options)
+    fetched_url_cg = ""
+    fetched_code = ""
 
     if mode == "Upload a file":
         uploaded = st.file_uploader("Upload source file", type=None)
@@ -123,7 +144,7 @@ elif page == "Code Guardian":
                                 st.code(fix, language=result["language"])
             with st.expander("Raw review (Markdown)"):
                 st.text(result["raw_response"])
-    else:
+    elif mode == "Paste code":
         code = st.text_area("Paste code to review", height=300)
         language = st.selectbox(
             "Language",
@@ -179,15 +200,76 @@ elif page == "Code Guardian":
                                 st.code(fix, language=result["language"])
             with st.expander("Raw review (Markdown)"):
                 st.text(result["raw_response"])
+    else:
+        fetched_url_cg = st.text_input("URL to fetch code from", value="https://itoversight.ca/Hal_Guardian/broken-code-page.html")
+        if st.button("Fetch URL") and fetched_url_cg:
+            with st.spinner("Fetching URL..."):
+                fetch_result = fetch_url(fetched_url_cg)
+            if fetch_result.get("ok"):
+                st.success(f"Fetched {fetch_result['domain']} ({fetch_result['size']} bytes, {fetch_result['content_type']})")
+                blocks = extract_code_blocks(fetch_result["text"])
+                if blocks:
+                    with st.expander("Extracted code blocks"):
+                        for i, b in enumerate(blocks[:5]):
+                            st.text(f"--- Block {i + 1} ---")
+                            st.text(b[:1000])
+                    if get_webfetch_confirm():
+                        if st.checkbox("Proceed to review extracted code"):
+                            fetched_code = "\n\n".join(blocks[:3])
+                    else:
+                        fetched_code = "\n\n".join(blocks[:3])
+                else:
+                    st.warning("No <code> or <pre> blocks found. Switching to raw text.")
+                    fetched_code = strip_html_to_text(fetch_result["text"])
+                    if get_webfetch_confirm():
+                        if st.checkbox("Proceed to review extracted text as code"):
+                            pass
+                    else:
+                        pass
+            else:
+                st.error(f"Fetch failed: {fetch_result.get('error')}")
+
+        if fetched_code:
+            language = st.selectbox(
+                "Detected language",
+                options=["python", "php", "javascript", "typescript", "sql", "powershell", "bash", "html", "css", "c", "cpp", "csharp", "java", "go", "rust", "ruby", "swift", "kotlin", "yaml", "json", "markdown", "text"],
+                index=0,
+            )
+            if st.button("Review fetched code"):
+                with st.spinner(f"Asking {global_model} to review locally..."):
+                    st.session_state["cg_paste_result"] = review_code(fetched_code, language, model=global_model).model_dump()
+            if "cg_paste_result" in st.session_state:
+                result = st.session_state["cg_paste_result"]
+                st.success(f"Status: {result['execution_status']}")
+                st.write(f"**Verdict:** `{result['verdict']}`")
+                st.write(f"**Model:** {result['model']}")
+                st.json(result["summary_table"])
+                st.markdown("### Structured findings")
+                if result["findings"]:
+                    for idx, f in enumerate(result["findings"]):
+                        with st.expander(f"{f['severity'].upper()} — {f['category']} (line {f['line']})"):
+                            st.write(f["description"])
+                            st.markdown(f"**Recommendation:** {f['recommendation']}")
+                            if f["severity"] in ("critical", "high", "medium"):
+                                if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_fetched_{idx}"):
+                                    with st.spinner(f"Asking {global_model} for a safe fix..."):
+                                        from hal_guardian.models import Finding
+                                        finding = Finding(**f)
+                                        fix = suggest_fix_for_finding(fetched_code, result["language"], finding, model=global_model)
+                                    st.markdown("**Suggested fix (review before using):**")
+                                    st.code(fix, language=result["language"])
+                with st.expander("Raw review (Markdown)"):
+                    st.text(result["raw_response"])
 
 elif page == "Trust Shield":
     st.subheader("Trust Shield — Untrusted Input Scanner")
     st.markdown("""
-    **What it does:** scans prompts, emails, pasted text, or documents for prompt-injection
+    **What it does:** scans prompts, emails, pasted text, documents, or web pages for prompt-injection
     language, embedded commands, and encoded payloads (Base64, hex, URL-encoded).
 
     **How to use it**
-    1. **Paste text** OR **upload a file** (`.txt`, `.md`, `.eml`, `.pdf`, `.docx`, `.jpg`, `.png`, `.gif`).
+    1. **Paste text**, **upload a file** (`.txt`, `.md`, `.eml`, `.pdf`, `.docx`, `.jpg`, `.png`, `.gif`),
+       or **fetch a URL** (webfetch must be enabled in Settings).
     2. Choose a **source** classification (`untrusted`, `unknown`, or `trusted`).
     3. Keep **Decode embedded payloads** checked to auto-decode hidden strings.
     4. Check **Deep scan** to ask Gemma 4 for a second-opinion intent analysis (slower, more thorough).
@@ -195,17 +277,23 @@ elif page == "Trust Shield":
     6. Review the trust level, findings, decoded payloads, and recommended action.
 
     Redacted text is shown at the bottom so you can share sanitized versions safely.
-    All file extraction happens locally — no content is sent out.
+    File extraction happens locally. Webfetch only sends a network request when you explicitly enable it and click Fetch.
     """)
 
-    input_mode = st.radio("Input mode", ["Paste text", "Upload file"])
+    webfetch_enabled = get_webfetch_enabled()
+    input_options = ["Paste text", "Upload file"]
+    if webfetch_enabled:
+        input_options.append("Fetch URL")
+    input_mode = st.radio("Input mode", input_options)
     text = ""
     uploaded_doc = None
     doc_meta = None
+    fetched_url = ""
+    fetch_result = None
 
     if input_mode == "Paste text":
         text = st.text_area("Paste untrusted text, prompt, or email content", height=200)
-    else:
+    elif input_mode == "Upload file":
         uploaded_doc = st.file_uploader("Upload document or image", type=["txt", "md", "eml", "pdf", "docx", "jpg", "jpeg", "png", "gif", "bmp", "webp"])
         if uploaded_doc is not None:
             doc_bytes = uploaded_doc.read()
@@ -225,6 +313,23 @@ elif page == "Trust Shield":
             if text:
                 with st.expander("Extracted text"):
                     st.text(text)
+    else:
+        fetched_url = st.text_input("URL to fetch", value="https://itoversight.ca/Hal_Guardian/injection-test-page.html")
+        if st.button("Fetch URL") and fetched_url:
+            with st.spinner("Fetching URL..."):
+                fetch_result = fetch_url(fetched_url)
+            if fetch_result.get("ok"):
+                st.success(f"Fetched {fetch_result['domain']} ({fetch_result['size']} bytes, {fetch_result['content_type']})")
+                extracted = strip_html_to_text(fetch_result["text"])
+                with st.expander("Extracted text preview"):
+                    st.text(extracted[:2000])
+                if get_webfetch_confirm():
+                    if st.checkbox("Proceed to scan this content"):
+                        text = extracted
+                else:
+                    text = extracted
+            else:
+                st.error(f"Fetch failed: {fetch_result.get('error')}")
 
     source = st.selectbox("Source classification", ["untrusted", "unknown", "trusted"])
     decode = st.checkbox("Decode embedded payloads (base64, hex, URL-encoded)", value=True)
@@ -590,6 +695,75 @@ elif page == "Model Playground":
                 st.markdown("**Saved prompts (SQLite)**")
                 for p in saved:
                     st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))}) — {p.get('explanation', '')[:60]}")
+
+elif page == "Settings":
+    st.subheader("Settings — Webfetch & Memory")
+    st.markdown("""
+    Webfetch lets HAL Guardian fetch content from URLs for analysis.
+    Because it makes outbound network requests, it is **disabled by default** and requires explicit configuration.
+
+    **Security notes**
+    - Only domains in the whitelist can be fetched.
+    - The local LLM never initiates network requests; only the document extractor does, when you click Fetch.
+    - Max download size and content-type filters are applied automatically.
+    - This is a proof-of-concept tool, not enterprise-approved for shared/network environments.
+    """)
+
+    seed_defaults()
+
+    webfetch_enabled = get_webfetch_enabled()
+    new_enabled = st.toggle("Enable webfetch", value=webfetch_enabled)
+    if new_enabled != webfetch_enabled:
+        set_webfetch_enabled(new_enabled)
+        st.rerun()
+
+    if get_webfetch_enabled():
+        st.warning("Webfetch is enabled. Only whitelisted domains are allowed. Use with caution on private networks.")
+
+    confirm = st.checkbox("Require confirmation before sending fetched content to LLM", value=get_webfetch_confirm())
+    set_webfetch_confirm(confirm)
+
+    max_size = st.number_input("Max download size (bytes)", min_value=1024, max_value=10485760, value=get_webfetch_max_size())
+    set_webfetch_max_size(max_size)
+
+    st.markdown("### Whitelist")
+    whitelist = list_whitelist()
+    for row in whitelist:
+        c1, c2 = st.columns([4, 1])
+        with c1:
+            st.write(f"`{row['domain']}` — {row['note'] or ''}")
+        with c2:
+            if st.button("Remove", key=f"wl_remove_{row['domain']}"):
+                remove_whitelist(row["domain"])
+                st.rerun()
+    new_domain = st.text_input("Add domain to whitelist", placeholder="example.com")
+    new_note = st.text_input("Note", placeholder="Why this domain is trusted")
+    if st.button("Add to whitelist") and new_domain:
+        add_whitelist(new_domain, new_note)
+        st.rerun()
+
+    st.markdown("### Blacklist")
+    blacklist = list_blacklist()
+    for row in blacklist:
+        c1, c2 = st.columns([4, 1])
+        with c1:
+            st.write(f"`{row['domain']}` — {row['reason'] or ''}")
+        with c2:
+            if st.button("Remove", key=f"bl_remove_{row['domain']}"):
+                remove_blacklist(row["domain"])
+                st.rerun()
+    new_bad_domain = st.text_input("Add domain to blacklist", placeholder="malicious.example.com")
+    new_reason = st.text_input("Reason", placeholder="Why this domain is blocked")
+    if st.button("Add to blacklist") and new_bad_domain:
+        add_blacklist(new_bad_domain, new_reason)
+        st.rerun()
+
+    st.markdown("### SQLite memory")
+    from hal_guardian.memory import init_db, query_audit, list_prompts, DB_PATH
+    init_db()
+    st.write(f"**Database path:** `{DB_PATH}`")
+    st.write(f"**Audit rows:** {len(query_audit(limit=1000000))}")
+    st.write(f"**Saved prompts:** {len(list_prompts())}")
 
 elif page == "Manual":
     st.subheader("HAL Guardian Manual")
