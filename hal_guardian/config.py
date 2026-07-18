@@ -27,6 +27,9 @@ AUDIT_PATH = os.path.join(PROJECT_ROOT, "audits", "hal-guardian-audit.jsonl")
 PROMPTS_DIR = os.path.join(PROJECT_ROOT, "hal_guardian", "prompts")
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 
+# Ensure DATA_DIR exists
+os.makedirs(DATA_DIR, exist_ok=True)
+
 # Review limits
 MAX_PROMPT_CHARS = 24000
 COMPACT_PROMPT_CHARS = 6000

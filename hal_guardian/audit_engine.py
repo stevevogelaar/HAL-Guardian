@@ -10,6 +10,7 @@ from typing import List, Optional
 
 from .config import AUDIT_PATH
 from .models import AuditEntry
+from .memory import log_audit_entry as _log_to_sql, init_db as _init_memory_db
 
 
 def _ensure_audit_dir():
@@ -26,6 +27,7 @@ def log_action(
     metadata: Optional[dict] = None,
 ) -> AuditEntry:
     _ensure_audit_dir()
+    _init_memory_db()
     entry = AuditEntry(
         timestamp=datetime.now(timezone.utc).isoformat(),
         action_type=action_type,
@@ -38,6 +40,7 @@ def log_action(
     )
     with open(AUDIT_PATH, "a", encoding="utf-8") as f:
         f.write(entry.model_dump_json() + "\n")
+    _log_to_sql(entry.model_dump())
     return entry
 
 

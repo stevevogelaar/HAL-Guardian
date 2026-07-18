@@ -450,10 +450,13 @@ elif page == "Model Playground":
     import random
     from datetime import datetime, timezone
 
+    from hal_guardian.memory import list_prompts as list_db_prompts, save_prompt as save_db_prompt, seed_defaults
+
+    seed_defaults()
+
     prompts_dir = Path(DATA_DIR) / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
     starter_path = prompts_dir / "starter-library.json"
-    saved_path = prompts_dir / "saved-prompts.jsonl"
 
     # Load starter library
     starters = []
@@ -463,13 +466,20 @@ elif page == "Model Playground":
         except Exception:
             starters = []
 
-    # Load saved user prompts
-    saved = []
-    if saved_path.exists():
-        try:
-            saved = [json.loads(line) for line in saved_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        except Exception:
-            saved = []
+    # Load saved user prompts from SQLite
+    db_prompts = list_db_prompts()
+    saved = [
+        {
+            "name": p["name"],
+            "tags": [t.strip() for t in p["tags"].split(",") if t.strip()] if p["tags"] else [],
+            "explanation": p["explanation"],
+            "model": p["model"],
+            "temperature": p["temperature"],
+            "system": p["system_prompt"],
+            "prompt": p["user_prompt"],
+        }
+        for p in db_prompts
+    ]
 
     # Session state for prompt fields
     if "mp_model" not in st.session_state:
@@ -513,19 +523,17 @@ elif page == "Model Playground":
                 save_tags = st.text_input("Tags (comma separated)", value="general")
                 save_explanation = st.text_area("Why this prompt works / when to use it", height=80)
                 if st.button("Confirm save"):
-                    entry = {
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "name": save_name,
-                        "tags": [t.strip() for t in save_tags.split(",") if t.strip()],
-                        "explanation": save_explanation,
-                        "model": st.session_state.mp_model,
-                        "temperature": st.session_state.mp_temperature,
-                        "system": st.session_state.mp_system,
-                        "prompt": st.session_state.mp_prompt,
-                    }
-                    with open(saved_path, "a", encoding="utf-8") as f:
-                        f.write(json.dumps(entry) + "\n")
-                    st.success(f"Saved '{save_name}'")
+                    tags = [t.strip() for t in save_tags.split(",") if t.strip()]
+                    save_db_prompt(
+                        name=save_name,
+                        tags=tags,
+                        explanation=save_explanation,
+                        model=st.session_state.mp_model,
+                        temperature=st.session_state.mp_temperature,
+                        system_prompt=st.session_state.mp_system,
+                        user_prompt=st.session_state.mp_prompt,
+                    )
+                    st.success(f"Saved '{save_name}' to SQLite library")
 
     system = st.text_area("System prompt (optional)", height=80, key="mp_system")
     prompt = st.text_area("User prompt", height=150, key="mp_prompt")
@@ -563,7 +571,7 @@ elif page == "Model Playground":
             for p in starters:
                 st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))})")
             if saved:
-                st.markdown("**Saved prompts**")
+                st.markdown("**Saved prompts (SQLite)**")
                 for p in saved:
                     st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))}) — {p.get('explanation', '')[:60]}")
 
