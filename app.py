@@ -124,7 +124,34 @@ elif page == "Code Guardian":
                 st.text(result["raw_response"])
     else:
         code = st.text_area("Paste code to review", height=300)
-        language = st.text_input("Language", value="python")
+        language = st.selectbox(
+            "Language",
+            options=[
+                "python",
+                "php",
+                "javascript",
+                "typescript",
+                "sql",
+                "powershell",
+                "bash",
+                "html",
+                "css",
+                "c",
+                "cpp",
+                "csharp",
+                "java",
+                "go",
+                "rust",
+                "ruby",
+                "swift",
+                "kotlin",
+                "yaml",
+                "json",
+                "markdown",
+                "text",
+            ],
+            index=0,
+        )
         if st.button("Review pasted code") and code:
             with st.spinner(f"Asking {global_model} to review locally..."):
                 st.session_state["cg_paste_result"] = review_code(code, language, model=global_model).model_dump()
