@@ -278,12 +278,100 @@ elif page == "Model Playground":
     st.markdown("""
     Send any prompt directly to a local Ollama model. Use this for prompt testing,
     quick experiments, or debugging model behavior. Nothing leaves your machine.
+
+    **How to use it**
+    1. **Model** — pick a model pulled in Ollama (e.g. `gemma4:e2b`).
+    2. **System prompt** — sets the assistant's role/persona (optional).
+    3. **User prompt** — the question or task you want answered.
+    4. **Temperature** — lower (0.0–0.3) for deterministic answers; higher (0.7–1.0) for creative output.
+    5. Click **Send** to run the model locally.
+    6. Use **Load example** to try a preset, **Random prompt** for inspiration, or **Save prompt** to keep a good one.
     """)
 
-    model = st.selectbox("Model", ["gemma4:e2b", "qwen2.5-coder:1.5b", "gemma3:270m"])
-    system = st.text_area("System prompt (optional)", value="You are a helpful assistant.", height=80)
-    prompt = st.text_area("User prompt", height=150)
-    temperature = st.slider("Temperature", 0.0, 1.0, 0.2)
+    import json
+    import random
+    from datetime import datetime, timezone
+
+    prompts_dir = Path(DATA_DIR) / "prompts"
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    starter_path = prompts_dir / "starter-library.json"
+    saved_path = prompts_dir / "saved-prompts.jsonl"
+
+    # Load starter library
+    starters = []
+    if starter_path.exists():
+        try:
+            starters = json.loads(starter_path.read_text(encoding="utf-8"))
+        except Exception:
+            starters = []
+
+    # Load saved user prompts
+    saved = []
+    if saved_path.exists():
+        try:
+            saved = [json.loads(line) for line in saved_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except Exception:
+            saved = []
+
+    # Session state for prompt fields
+    if "mp_model" not in st.session_state:
+        st.session_state.mp_model = "gemma4:e2b"
+    if "mp_system" not in st.session_state:
+        st.session_state.mp_system = "You are a helpful assistant."
+    if "mp_prompt" not in st.session_state:
+        st.session_state.mp_prompt = ""
+    if "mp_temperature" not in st.session_state:
+        st.session_state.mp_temperature = 0.2
+
+    # Controls row
+    col_model, col_actions = st.columns([2, 3])
+    with col_model:
+        model = st.selectbox("Model", ["gemma4:e2b", "qwen2.5-coder:1.5b", "gemma3:270m"], key="mp_model")
+    with col_actions:
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            if st.button("Random prompt"):
+                all_prompts = starters + saved
+                if all_prompts:
+                    pick = random.choice(all_prompts)
+                    st.session_state.mp_system = pick.get("system", "")
+                    st.session_state.mp_prompt = pick.get("prompt", "")
+                    st.session_state.mp_temperature = pick.get("temperature", 0.2)
+                    st.rerun()
+                else:
+                    st.warning("No prompt library found.")
+        with c2:
+            chosen = st.selectbox("Load example", ["(none)"] + [p.get("name", "untitled") for p in starters + saved])
+            if chosen != "(none)":
+                for p in starters + saved:
+                    if p.get("name") == chosen:
+                        st.session_state.mp_system = p.get("system", "")
+                        st.session_state.mp_prompt = p.get("prompt", "")
+                        st.session_state.mp_temperature = p.get("temperature", 0.2)
+                        break
+        with c3:
+            with st.popover("Save prompt"):
+                save_name = st.text_input("Name", value="My prompt")
+                save_tags = st.text_input("Tags (comma separated)", value="general")
+                save_explanation = st.text_area("Why this prompt works / when to use it", height=80)
+                if st.button("Confirm save"):
+                    entry = {
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "name": save_name,
+                        "tags": [t.strip() for t in save_tags.split(",") if t.strip()],
+                        "explanation": save_explanation,
+                        "model": st.session_state.mp_model,
+                        "temperature": st.session_state.mp_temperature,
+                        "system": st.session_state.mp_system,
+                        "prompt": st.session_state.mp_prompt,
+                    }
+                    with open(saved_path, "a", encoding="utf-8") as f:
+                        f.write(json.dumps(entry) + "\n")
+                    st.success(f"Saved '{save_name}'")
+
+    system = st.text_area("System prompt (optional)", height=80, key="mp_system")
+    prompt = st.text_area("User prompt", height=150, key="mp_prompt")
+    temperature = st.slider("Temperature", 0.0, 1.0, key="mp_temperature")
 
     if st.button("Send") and prompt:
         import ollama
@@ -307,3 +395,16 @@ elif page == "Model Playground":
                 st.text(reply)
             except Exception as e:
                 st.error(f"Model error: {e}")
+
+    # Library viewer
+    with st.expander("Prompt library"):
+        if not starters and not saved:
+            st.write("No prompts saved yet.")
+        else:
+            st.markdown("**Starter prompts**")
+            for p in starters:
+                st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))})")
+            if saved:
+                st.markdown("**Saved prompts**")
+                for p in saved:
+                    st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))}) — {p.get('explanation', '')[:60]}")
