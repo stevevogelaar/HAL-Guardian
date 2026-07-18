@@ -40,13 +40,18 @@ if page == "Home":
     st.markdown("""
     **HAL Guardian** is an edge-deployed AI security assistant built for the Gemma 4 hackathon.
 
-    Use the sidebar to:
+    **What makes it different:** every review, scan, and chat runs locally through Ollama.
+    Your source code, prompts, and data never leave the machine unless you choose to export them.
+
+    **Use the sidebar to explore**
     - **Code Guardian** — review source files or pasted code for security, testing, complexity, and style issues.
     - **Trust Shield** — classify untrusted text, prompts, or email content and detect prompt injection or embedded commands.
     - **Audit Engine** — review the last logged actions.
     - **Health** — check Ollama reachability, available models, and recent failure patterns.
+    - **Subagent Console** — call any HAL Guardian module like an external agent would.
+    - **Model Playground** — chat directly with local models and save useful prompts.
 
-    All reasoning is performed locally through Ollama (`gemma4:e2b` by default).
+    Default model: `gemma4:e2b` via Ollama.
     """)
     snap = health_snapshot()
     st.subheader("Current Environment")
@@ -54,6 +59,19 @@ if page == "Home":
 
 elif page == "Code Guardian":
     st.subheader("Code Guardian — Local Code Review")
+    st.markdown("""
+    **What it does:** sends source code to a local Gemma 4 model for a structured review covering
+    security, testing, complexity, and style.
+
+    **How to use it**
+    1. Choose **Upload a file** or **Paste code**.
+    2. Provide the code (and a language hint if pasting).
+    3. Click the review button.
+    4. Read the **verdict** and the **structured findings** cards.
+    5. Expand **Raw review (Markdown)** to see the full model output.
+
+    All review data is logged to `audits/hal-guardian-audit.jsonl`.
+    """)
     mode = st.radio("Input mode", ["Upload a file", "Paste code"])
 
     if mode == "Upload a file":
@@ -99,6 +117,20 @@ elif page == "Code Guardian":
 
 elif page == "Trust Shield":
     st.subheader("Trust Shield — Untrusted Input Scanner")
+    st.markdown("""
+    **What it does:** scans prompts, emails, pasted text, or documents for prompt-injection
+    language, embedded commands, and encoded payloads (Base64, hex, URL-encoded).
+
+    **How to use it**
+    1. Paste the untrusted text.
+    2. Choose a **source** classification (`untrusted`, `unknown`, or `trusted`).
+    3. Keep **Decode embedded payloads** checked to auto-decode hidden strings.
+    4. Check **Deep scan** to ask Gemma 4 for a second-opinion intent analysis (slower, more thorough).
+    5. Click **Scan input**.
+    6. Review the trust level, findings, decoded payloads, and recommended action.
+
+    Redacted text is shown at the bottom so you can share sanitized versions safely.
+    """)
     text = st.text_area("Paste untrusted text, prompt, or email content", height=200)
     source = st.selectbox("Source classification", ["untrusted", "unknown", "trusted"])
     decode = st.checkbox("Decode embedded payloads (base64, hex, URL-encoded)", value=True)
@@ -136,6 +168,17 @@ elif page == "Trust Shield":
 
 elif page == "Audit Engine":
     st.subheader("Audit Engine — Recent Activity")
+    st.markdown("""
+    **What it does:** shows the most recent actions HAL Guardian has performed.
+
+    Every code review, trust scan, health check, and subagent call is appended to
+    `audits/hal-guardian-audit.jsonl` as a structured JSON line. Use this tab to verify
+    what was reviewed, which model was used, how long it took, and whether it succeeded.
+
+    **How to use it**
+    1. Adjust the slider to choose how many recent entries to display.
+    2. Each entry shows: timestamp, action type, target, model, status, success, and metadata.
+    """)
     limit = st.slider("Number of recent entries", 10, 200, 50)
     records = read_audit_tail(limit=limit)
     st.write(f"Showing last {len(records)} entries from `audits/hal-guardian-audit.jsonl`")
@@ -144,6 +187,14 @@ elif page == "Audit Engine":
 
 elif page == "Health":
     st.subheader("Health — HAL Guardian Status")
+    st.markdown("""
+    **What it does:** checks whether Ollama is reachable and summarizes recent activity.
+
+    **How to use it**
+    1. The snapshot shows total actions, successes, failures, and recent failures.
+    2. It also lists the models currently available in your local Ollama instance.
+    3. If Ollama is not reachable, start it from PowerShell with: `ollama serve`
+    """)
     snap = health_snapshot()
     st.json(snap)
     if snap["ollama_status"] == "reachable":
@@ -154,10 +205,23 @@ elif page == "Health":
 elif page == "Subagent Console":
     st.subheader("Subagent Console — Direct Agent Commands")
     st.markdown("""
-    This tab lets you call any HAL Guardian subagent through the orchestrator.
-    The same commands work from Python, PowerShell, or another AI agent.
+    **What it does:** exposes every HAL Guardian subagent through a single command interface.
+    This is the same API humans, scripts, and other AI agents can use.
 
-    **Commands:** `review`, `review_code`, `scan`, `health`, `audit`
+    **Commands**
+    - `review` — review a single source file
+    - `review_dir` — batch-review all source files in a directory
+    - `review_code` — review pasted code text
+    - `scan` — scan untrusted text for prompt injection / encoded payloads
+    - `health` — show Ollama status and action counts
+    - `audit` — show recent audit log entries
+
+    **How to use it**
+    1. Pick a command from the dropdown.
+    2. The target field and modifiers update with sensible defaults.
+    3. Open **Show command reference** to see Python and PowerShell examples.
+    4. Click **Run subagent** to execute.
+    5. Use **Quick presets** for one-click demos.
     """)
 
     # Per-command examples
