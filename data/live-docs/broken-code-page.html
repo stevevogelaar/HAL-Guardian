@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAL Guardian Demo - Vulnerable Code Samples</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #c0392b; }
+        h2 { color: #2980b9; }
+        .note { background: #fff3cd; border-left: 4px solid #f0ad4e; padding: 12px; margin: 20px 0; }
+        pre { background: #f4f4f4; padding: 12px; border-radius: 4px; overflow-x: auto; }
+        code { font-family: Consolas, monospace; }
+    </style>
+</head>
+<body>
+    <h1>Vulnerable Code Test Page</h1>
+    <p class="note">
+        <strong>Demo purpose:</strong> This page contains intentionally insecure code snippets that HAL Guardian's Code Guardian should flag.
+    </p>
+
+    <h2>Snippet 1: SQL Injection in PHP</h2>
+    <pre><code class="language-php">&lt;?php
+$host = "localhost";
+$user = "root";
+$pass = "P@ssw0rd123";
+$conn = new mysqli($host, $user, $pass, "app_db");
+
+$username = $_POST['username'];
+$password = $_POST['password'];
+
+$query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+$result = $conn-&gt;query($query);
+
+if ($result &amp;&amp; $result-&gt;num_rows &gt; 0) {
+    $row = $result-&gt;fetch_assoc();
+    echo "Welcome, " . $row['username'];
+    var_dump($row);
+} else {
+    echo "Login failed";
+}
+?&gt;</code></pre>
+
+    <h2>Snippet 2: Command Injection in Python</h2>
+    <pre><code class="language-python">import subprocess
+
+def run_user_command(cmd):
+    return subprocess.check_output(cmd, shell=True)
+
+user_input = input("Enter command: ")
+output = run_user_command(user_input)
+print(output.decode())</code></pre>
+
+    <h2>Snippet 3: Hardcoded Secret and Weak Validation</h2>
+    <pre><code class="language-python"># TODO: actually validate
+
+def check_password(password):
+    if password == "admin":
+        return True
+    return False
+
+api_key = "sk_live_51HxyzABCDEF1234567890"
+
+def calculate_price(quantity):
+    total = 0
+    for i in range(quantity):
+        total = total + 9.99
+    return total
+</code></pre>
+
+    <footer style="margin-top: 40px; color: #777; font-size: 0.9em;">
+        Hosted for HAL Guardian demo. These snippets are deliberately insecure for testing only.
+    </footer>
+</body>
+</html>
