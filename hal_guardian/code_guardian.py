@@ -3,10 +3,11 @@ HAL Guardian Code Review Engine
 Calls local Gemma 4 via Ollama to review source files.
 """
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import ollama
 
@@ -94,25 +95,105 @@ def _call_ollama(prompt: str, model: str) -> dict:
     }
 
 
-def _parse_review(raw: str) -> CodeReviewResult:
-    # Best-effort parsing: extract verdict and summary counts
-    raw_lower = raw.lower()
-    if "needs changes" in raw_lower:
-        verdict = "needs changes"
-    elif "needs discussion" in raw_lower:
-        verdict = "needs discussion"
-    elif "ship it" in raw_lower:
-        verdict = "ship it"
-    else:
-        verdict = "needs discussion"
+def _extract_summary_table(raw: str) -> dict:
+    """Try to extract issue counts from the Markdown summary table."""
+    summary = {"security": 0, "testing": 0, "complexity": 0, "style": 0}
+    # Match lines like: | **Security** | 5 |
+    pattern = re.compile(r"\|\s*\*?\*?([^|*]+)\*?\*?\s*\|\s*(\d+)\s*\|", re.IGNORECASE)
+    for match in pattern.finditer(raw):
+        cat = match.group(1).strip().lower().replace("**", "").replace("*", "")
+        count = int(match.group(2))
+        if cat in summary:
+            summary[cat] = count
+    return summary
 
-    # Count category mentions as a crude summary table
-    summary = {
-        "security": raw_lower.count("security"),
-        "testing": raw_lower.count("testing"),
-        "complexity": raw_lower.count("complexity"),
-        "style": raw_lower.count("style"),
-    }
+
+def _extract_findings(raw: str) -> List[Finding]:
+    """Best-effort parser for Gemma 4 Markdown findings lists."""
+    findings: List[Finding] = []
+
+    # Split on heading patterns like #### Finding 1: ...
+    blocks = re.split(r"\n(?=####\s*Finding\s*\d+|\*\*\d+\.\s+.*\*\*|\*\*[A-Z][a-z]+\s+\w+.*\*\*)", raw, flags=re.IGNORECASE)
+
+    severity_re = re.compile(r"\*\*Severity:\*\*\s*(critical|high|medium|low)", re.IGNORECASE)
+    category_re = re.compile(r"\*\*Category:\*\*\s*(security|testing|complexity|style)", re.IGNORECASE)
+    line_re = re.compile(r"\*\*Line Reference:\*\*\s*([^\n]+)", re.IGNORECASE)
+    desc_re = re.compile(r"\*\*Description:\*\*\s*([\s\S]+?)(?=\*\*Recommendation:\*\*|\n\n|\Z)", re.IGNORECASE)
+    rec_re = re.compile(r"\*\*Recommendation:\*\*\s*([\s\S]+?)(?=\n\n|\Z)", re.IGNORECASE)
+
+    for block in blocks:
+        if not severity_re.search(block) and not category_re.search(block):
+            continue
+
+        severity_match = severity_re.search(block)
+        category_match = category_re.search(block)
+        line_match = line_re.search(block)
+        desc_match = desc_re.search(block)
+        rec_match = rec_re.search(block)
+
+        severity = severity_match.group(1).lower() if severity_match else "info"
+        category = category_match.group(1).lower() if category_match else "general"
+        line = line_match.group(1).strip() if line_match else ""
+
+        description = ""
+        if desc_match:
+            description = re.sub(r"\s+", " ", desc_match.group(1)).strip()
+
+        recommendation = ""
+        if rec_match:
+            recommendation = re.sub(r"\s+", " ", rec_match.group(1)).strip()
+        elif not description:
+            # Fallback: use the whole block as description
+            description = re.sub(r"\s+", " ", block).strip()[:500]
+
+        if description or recommendation:
+            findings.append(
+                Finding(
+                    severity=severity,
+                    category=category,
+                    line=line,
+                    description=description,
+                    recommendation=recommendation,
+                )
+            )
+
+    return findings
+
+
+def _extract_verdict(raw: str) -> str:
+    raw_lower = raw.lower()
+    if "verdict: needs changes" in raw_lower or "verdict:** needs changes" in raw_lower:
+        return "needs changes"
+    if "verdict: needs discussion" in raw_lower or "verdict:** needs discussion" in raw_lower:
+        return "needs discussion"
+    if "verdict: ship it" in raw_lower or "verdict:** ship it" in raw_lower:
+        return "ship it"
+    # Fallback to first mention
+    if "needs changes" in raw_lower:
+        return "needs changes"
+    if "needs discussion" in raw_lower:
+        return "needs discussion"
+    if "ship it" in raw_lower:
+        return "ship it"
+    return "needs discussion"
+
+
+def _parse_review(raw: str) -> CodeReviewResult:
+    """Parse the Gemma 4 Markdown review into a structured result."""
+    verdict = _extract_verdict(raw)
+    summary = _extract_summary_table(raw)
+    findings = _extract_findings(raw)
+
+    if not findings:
+        # Fallback: preserve raw response as a single general finding
+        findings = [
+            Finding(
+                severity="info",
+                category="general",
+                description="Model returned a free-form review. See raw response for full details.",
+                recommendation="Parse and act on the review points listed by the model.",
+            )
+        ]
 
     return CodeReviewResult(
         file_path="",
@@ -120,14 +201,7 @@ def _parse_review(raw: str) -> CodeReviewResult:
         model="",
         execution_status="completed",
         summary_table=summary,
-        findings=[
-            Finding(
-                severity="info",
-                category="general",
-                description="Model returned a free-form review. See raw response for full details.",
-                recommendation="Parse and act on the review points listed by the model.",
-            )
-        ],
+        findings=findings,
         verdict=verdict,
         rationale="Parsed from local Gemma 4 review output.",
         raw_response=raw,

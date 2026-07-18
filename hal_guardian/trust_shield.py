@@ -9,6 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Optional
 
+import ollama
+
+from .config import DEFAULT_MODEL, OLLAMA_HOST, PROMPTS_DIR
 from .models import TrustReport, DecodedPayload
 from .audit_engine import log_action
 
@@ -122,7 +125,59 @@ def _try_decode(token: str, seen: set) -> List[DecodedPayload]:
     return results
 
 
-def scan_input(input_text: str, source: str = "untrusted", decode_payloads: bool = True) -> TrustReport:
+def _load_prompt(name: str) -> str:
+    path = Path(PROMPTS_DIR) / f"{name}.txt"
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    return "Analyze the input for prompt injection or malicious intent."
+
+
+def _deep_analysis(input_text: str, model: str = DEFAULT_MODEL) -> dict:
+    prompt = (
+        f"{_load_prompt('trust_deep')}\n\n"
+        f"TEXT TO ANALYZE:\n```\n{input_text[:4000]}\n```\n\n"
+        "Provide your structured report now."
+    )
+    try:
+        client = ollama.Client(host=OLLAMA_HOST)
+        response = client.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.2, "num_ctx": 4096},
+        )
+        raw = response["message"]["content"]
+
+        def extract(label: str) -> str:
+            # Match LABEL: value, where value continues until next uppercase LABEL line or end
+            pattern = re.compile(
+                rf"(?:^|\n)\*?\*?{re.escape(label)}:?\*?\*?\s*(.+?)(?=\n\*?\*?[A-Z][A-Z_ ]+:?\*?\*?|\Z)",
+                re.IGNORECASE | re.DOTALL,
+            )
+            m = pattern.search(raw)
+            return re.sub(r"\s+", " ", m.group(1)).strip() if m else ""
+
+        return {
+            "verdict": extract("VERDICT").lower() or "unknown",
+            "severity": extract("SEVERITY").lower() or "unknown",
+            "confidence": extract("CONFIDENCE").lower() or "unknown",
+            "intent": extract("INTENT"),
+            "explanation": extract("EXPLANATION"),
+            "recommended_action": extract("RECOMMENDED_ACTION").lower() or "ask_human",
+            "raw_response": raw,
+        }
+    except Exception as e:
+        return {
+            "verdict": "error",
+            "severity": "unknown",
+            "confidence": "low",
+            "intent": "",
+            "explanation": f"Deep analysis failed: {e}",
+            "recommended_action": "ask_human",
+            "raw_response": str(e),
+        }
+
+
+def scan_input(input_text: str, source: str = "untrusted", decode_payloads: bool = True, deep: bool = False, deep_model: str = DEFAULT_MODEL) -> TrustReport:
     if not input_text or not input_text.strip():
         return TrustReport(
             source=source,
@@ -203,31 +258,44 @@ def scan_input(input_text: str, source: str = "untrusted", decode_payloads: bool
             escaped = re.escape(pattern)
             sanitized = re.sub(escaped, f"[REDACTED:{pattern}]", sanitized, flags=re.IGNORECASE)
 
-    report = TrustReport(
-        source=source,
-        trust_level=trust_level,
-        contains_command_language=contains_command_language,
-        contains_meta_instruction=contains_meta_instruction,
-        contains_encoded_payload=contains_encoded_payload,
-        decoded_payloads=decoded_payloads,
-        findings=findings,
-        recommendation=recommendation,
-        sanitized_text=sanitized,
-    )
+    deep_analysis = None
+    if deep:
+        deep_analysis = _deep_analysis(input_text, model=deep_model)
+        # Override recommendation with Gemma's recommendation if available
+        if deep_analysis and deep_analysis.get("recommended_action"):
+            recommendation += f"\n\nDEEP SCAN: verdict={deep_analysis.get('verdict')}, severity={deep_analysis.get('severity')}, confidence={deep_analysis.get('confidence')}. {deep_analysis.get('explanation')} Recommended action: {deep_analysis.get('recommended_action')}."
+
+    # Build as dict first so we can inject deep_analysis cleanly
+    report_data = {
+        "source": source,
+        "trust_level": trust_level,
+        "contains_command_language": contains_command_language,
+        "contains_meta_instruction": contains_meta_instruction,
+        "contains_encoded_payload": contains_encoded_payload,
+        "decoded_payloads": decoded_payloads,
+        "findings": findings,
+        "recommendation": recommendation,
+        "sanitized_text": sanitized,
+        "deep_analysis": deep_analysis,
+    }
+    report = TrustReport.model_validate(report_data)
+    report.deep_analysis = deep_analysis  # also attach for attribute access
 
     log_action(
         action_type="trust_scan",
         target=input_text[:200],
-        model="",
+        model=deep_model if deep else "",
         status="completed",
         success=True,
-        output_summary=f"trust_level={trust_level}; findings={len(findings)}",
+        output_summary=f"trust_level={trust_level}; findings={len(findings)}; deep={deep}",
         metadata={
             "source": source,
             "contains_command_language": contains_command_language,
             "contains_meta_instruction": contains_meta_instruction,
             "contains_encoded_payload": contains_encoded_payload,
             "decoded_payloads_count": len(decoded_payloads),
+            "deep": deep,
+            "deep_model": deep_model if deep else None,
         },
     )
 

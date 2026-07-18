@@ -1,8 +1,8 @@
 """
 Shared Pydantic models for HAL Guardian.
 """
-from typing import List, Optional
-from pydantic import BaseModel
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict
 
 
 class Finding(BaseModel):
@@ -32,6 +32,8 @@ class DecodedPayload(BaseModel):
 
 
 class TrustReport(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     source: str
     trust_level: str
     contains_command_language: bool
@@ -41,6 +43,7 @@ class TrustReport(BaseModel):
     findings: List[str]
     recommendation: str
     sanitized_text: str
+    deep_analysis: Optional[Dict[str, Any]] = None
 
 
 class AuditEntry(BaseModel):
