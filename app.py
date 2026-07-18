@@ -30,7 +30,7 @@ with st.sidebar:
     st.title(f"{APP_ICON} {APP_TITLE}")
     page = st.radio(
         "Choose a module",
-        ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground"],
+        ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground", "Manual"],
     )
     st.divider()
 
@@ -566,3 +566,83 @@ elif page == "Model Playground":
                 st.markdown("**Saved prompts**")
                 for p in saved:
                     st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))}) — {p.get('explanation', '')[:60]}")
+
+elif page == "Manual":
+    st.subheader("HAL Guardian Manual")
+    st.markdown("""
+    Welcome to HAL Guardian. This page explains every module and how to use it.
+
+    ---
+
+    ### Home
+    Shows the current environment, available models, and recent activity snapshot.
+
+    ---
+
+    ### Code Guardian
+    Reviews source code for security, testing, complexity, and style issues.
+    - Upload a file or paste code
+    - Select the programming language from the dropdown
+    - Read the structured findings and verdict
+    - For `critical`, `high`, or `medium` findings, click **Suggest fix** to see a safe code replacement
+    - Always review suggested fixes before using them
+
+    ---
+
+    ### Trust Shield
+    Scans prompts, emails, documents, or images for:
+    - Prompt-injection language
+    - Destructive commands (`rm -rf /`, `drop table`, etc.)
+    - Encoded payloads (Base64, hex, URL-encoded)
+
+    You can paste text or upload files: `.txt`, `.md`, `.eml`, `.pdf`, `.docx`, `.jpg`, `.png`, `.gif`.
+
+    - **Quick scan** runs instantly with deterministic pattern matching
+    - **Deep scan** calls Gemma 4 for intent analysis and recommended action
+    - **Sanitized text** at the bottom shows a redacted version you can share safely
+
+    ---
+
+    ### Audit Engine
+    Displays the structured JSONL log of every action HAL Guardian has performed.
+
+    ---
+
+    ### Health
+    Shows Ollama reachability, available models, and recent success/failure counts.
+
+    ---
+
+    ### Subagent Console
+    Lets you call HAL Guardian modules like an external agent would. Each command shows a Python and PowerShell example.
+
+    Available commands: `review`, `review_dir`, `review_code`, `scan`, `health`, `audit`.
+
+    ---
+
+    ### Model Playground
+    Chat directly with any local Ollama model. Load examples, generate random prompts, tune temperature, and save useful prompts to the project library.
+
+    ---
+
+    ### Adding Models
+    HAL Guardian detects any model you have pulled in Ollama. To add a model, run in PowerShell:
+    ```powershell
+    ollama pull gemma4:4b
+    ```
+    Then restart HAL Guardian and select it from the **Active model** dropdown in the sidebar.
+
+    ---
+
+    ### Privacy
+    All reasoning happens locally through Ollama. Your code, prompts, and data do not leave the machine unless you choose to export them.
+
+    ---
+
+    ### Links
+    - [GitHub Repository](https://github.com/stevevogelaar/HAL-Guardian.git)
+    - [Architecture Docs](docs/ARCHITECTURE.md)
+    - [Orchestrator Docs](docs/ORCHESTRATOR.md)
+    - [Hackathon Writeup](docs/HACKATHON_WRITEUP.md)
+    - [HAL Autonomous Auditor (second submission)](https://github.com/stevevogelaar/HAL-Autonomous-Auditor.git)
+    """)
