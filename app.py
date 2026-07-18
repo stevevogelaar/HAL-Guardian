@@ -213,21 +213,24 @@ elif page == "Code Guardian":
                         for i, b in enumerate(blocks[:5]):
                             st.text(f"--- Block {i + 1} ---")
                             st.text(b[:1000])
-                    if get_webfetch_confirm():
-                        if st.checkbox("Proceed to review extracted code"):
-                            fetched_code = "\n\n".join(blocks[:3])
-                    else:
-                        fetched_code = "\n\n".join(blocks[:3])
+                    st.session_state["cg_fetched_code"] = "\n\n".join(blocks[:3])
                 else:
                     st.warning("No <code> or <pre> blocks found. Switching to raw text.")
-                    fetched_code = strip_html_to_text(fetch_result["text"])
-                    if get_webfetch_confirm():
-                        if st.checkbox("Proceed to review extracted text as code"):
-                            pass
-                    else:
-                        pass
+                    st.session_state["cg_fetched_code"] = strip_html_to_text(fetch_result["text"])
             else:
                 st.error(f"Fetch failed: {fetch_result.get('error')}")
+                st.session_state.pop("cg_fetched_code", None)
+
+        if "cg_fetched_code" in st.session_state:
+            fetched_code = st.session_state["cg_fetched_code"]
+            if get_webfetch_confirm():
+                proceed = st.checkbox("Proceed to review extracted code")
+            else:
+                proceed = True
+            if proceed:
+                st.info("Fetched code is ready to review.")
+            else:
+                fetched_code = ""
 
         if fetched_code:
             language = st.selectbox(
