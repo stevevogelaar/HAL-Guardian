@@ -321,15 +321,22 @@ elif page == "Trust Shield":
             if fetch_result.get("ok"):
                 st.success(f"Fetched {fetch_result['domain']} ({fetch_result['size']} bytes, {fetch_result['content_type']})")
                 extracted = strip_html_to_text(fetch_result["text"])
+                st.session_state["ts_fetched_text"] = extracted
                 with st.expander("Extracted text preview"):
                     st.text(extracted[:2000])
-                if get_webfetch_confirm():
-                    if st.checkbox("Proceed to scan this content"):
-                        text = extracted
-                else:
-                    text = extracted
             else:
                 st.error(f"Fetch failed: {fetch_result.get('error')}")
+                st.session_state.pop("ts_fetched_text", None)
+
+        if "ts_fetched_text" in st.session_state:
+            extracted = st.session_state["ts_fetched_text"]
+            if get_webfetch_confirm():
+                proceed = st.checkbox("Proceed to scan this content")
+            else:
+                proceed = True
+            if proceed:
+                text = extracted
+                st.info("Fetched content is ready to scan.")
 
     source = st.selectbox("Source classification", ["untrusted", "unknown", "trusted"])
     decode = st.checkbox("Decode embedded payloads (base64, hex, URL-encoded)", value=True)
