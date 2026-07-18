@@ -12,13 +12,17 @@ import streamlit as st
 # Ensure module imports work whether run as `streamlit run app.py` or via package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR
+from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR, get_available_models, DEFAULT_MODEL
 from hal_guardian.code_guardian import review_file, review_code
 from hal_guardian.trust_shield import scan_input
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
 
 st.set_page_config(page_title=APP_TITLE, page_icon=APP_ICON, layout="wide")
+
+# Discover available local models
+_available_models = get_available_models()
+_selected_default = DEFAULT_MODEL if DEFAULT_MODEL in _available_models else (_available_models[0] if _available_models else DEFAULT_MODEL)
 
 # Sidebar navigation
 with st.sidebar:
@@ -28,13 +32,24 @@ with st.sidebar:
         ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground"],
     )
     st.divider()
+
+    st.markdown("#### Active model")
+    global_model = st.selectbox(
+        "Model used by Code Guardian and Trust Shield deep scan",
+        options=_available_models,
+        index=_available_models.index(_selected_default) if _selected_default in _available_models else 0,
+        help="Choose any model pulled in your local Ollama instance. Gemma 4 is recommended for hackathon submission.",
+    )
+    st.caption(f"{len(_available_models)} model(s) available locally")
+
+    st.divider()
     if st.button("Restart Server", help="Run tools\\Restart-HALGuardianUI.ps1 externally to relaunch the UI."):
         restart_flag = Path(__file__).resolve().parent / "tools" / "restart-requested.flag"
         restart_flag.write_text(f"restart requested at {datetime.now(timezone.utc).isoformat()}\n")
         st.warning("Restart flag set. Run tools\\Restart-HALGuardianUI.ps1 from PowerShell to relaunch.")
 
 st.title(f"{APP_ICON} {APP_TITLE}")
-st.caption("Runs locally on Gemma 4 via Ollama. Nothing leaves your machine unless you choose to export it.")
+st.caption(f"Runs locally on {global_model} via Ollama. Nothing leaves your machine unless you choose to export it.")
 
 if page == "Home":
     st.markdown("""
@@ -82,8 +97,8 @@ elif page == "Code Guardian":
             tmp_path.write_bytes(uploaded.read())
             st.info(f"Saved to {tmp_path}")
             if st.button("Review uploaded file"):
-                with st.spinner("Asking Gemma 4 to review locally..."):
-                    result = review_file(str(tmp_path))
+                with st.spinner(f"Asking {global_model} to review locally..."):
+                    result = review_file(str(tmp_path), model=global_model)
                 st.success(f"Status: {result.execution_status}")
                 st.write(f"**Verdict:** `{result.verdict}`")
                 st.write(f"**Model:** {result.model}")
@@ -100,8 +115,8 @@ elif page == "Code Guardian":
         code = st.text_area("Paste code to review", height=300)
         language = st.text_input("Language", value="python")
         if st.button("Review pasted code") and code:
-            with st.spinner("Asking Gemma 4 to review locally..."):
-                result = review_code(code, language)
+            with st.spinner(f"Asking {global_model} to review locally..."):
+                result = review_code(code, language, model=global_model)
             st.success(f"Status: {result.execution_status}")
             st.write(f"**Verdict:** `{result.verdict}`")
             st.write(f"**Model:** {result.model}")
@@ -137,7 +152,7 @@ elif page == "Trust Shield":
     deep = st.checkbox("Deep scan with Gemma 4 (slower, catches subtle attacks)", value=False)
     if st.button("Scan input") and text:
         with st.spinner("Running Trust Shield..."):
-            report = scan_input(text, source=source, decode_payloads=decode, deep=deep)
+            report = scan_input(text, source=source, decode_payloads=decode, deep=deep, deep_model=global_model)
         st.write(f"**Trust level:** `{report.trust_level}`")
         st.write(f"Command language: {report.contains_command_language}")
         st.write(f"Meta-instruction framing: {report.contains_meta_instruction}")
@@ -326,7 +341,7 @@ elif page == "Subagent Console":
             st.json(result, expanded=False)
     with c2:
         if st.button("Review bad_login.php"):
-            result = run_orchestrator("review", target="data/sample_code/bad_login.php", model="gemma4:e2b")
+            result = run_orchestrator("review", target="data/sample_code/bad_login.php", model=global_model)
             st.json(result, expanded=False)
     with c3:
         if st.button("Health snapshot"):
@@ -334,7 +349,7 @@ elif page == "Subagent Console":
             st.json(result, expanded=False)
     with c4:
         if st.button("Review sample code dir"):
-            result = run_orchestrator("review_dir", target="data/sample_code", model="gemma4:e2b")
+            result = run_orchestrator("review_dir", target="data/sample_code", model=global_model)
             st.json(result, expanded=False)
 
 elif page == "Model Playground":
@@ -390,7 +405,7 @@ elif page == "Model Playground":
     # Controls row
     col_model, col_actions = st.columns([2, 3])
     with col_model:
-        model = st.selectbox("Model", ["gemma4:e2b", "qwen2.5-coder:1.5b", "gemma3:270m"], key="mp_model")
+        model = st.selectbox("Model", _available_models, index=_available_models.index(global_model) if global_model in _available_models else 0, key="mp_model")
     with col_actions:
         c1, c2, c3 = st.columns(3)
         with c1:
