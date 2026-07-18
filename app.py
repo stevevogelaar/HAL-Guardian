@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR, get_available_models, DEFAULT_MODEL
 from hal_guardian.code_guardian import review_file, review_code, suggest_fix_for_finding
 from hal_guardian.trust_shield import scan_input
+from hal_guardian.document_extractor import extract_from_file
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
 
@@ -186,7 +187,7 @@ elif page == "Trust Shield":
     language, embedded commands, and encoded payloads (Base64, hex, URL-encoded).
 
     **How to use it**
-    1. Paste the untrusted text.
+    1. **Paste text** OR **upload a file** (`.txt`, `.md`, `.eml`, `.pdf`, `.docx`, `.jpg`, `.png`, `.gif`).
     2. Choose a **source** classification (`untrusted`, `unknown`, or `trusted`).
     3. Keep **Decode embedded payloads** checked to auto-decode hidden strings.
     4. Check **Deep scan** to ask Gemma 4 for a second-opinion intent analysis (slower, more thorough).
@@ -194,8 +195,37 @@ elif page == "Trust Shield":
     6. Review the trust level, findings, decoded payloads, and recommended action.
 
     Redacted text is shown at the bottom so you can share sanitized versions safely.
+    All file extraction happens locally — no content is sent out.
     """)
-    text = st.text_area("Paste untrusted text, prompt, or email content", height=200)
+
+    input_mode = st.radio("Input mode", ["Paste text", "Upload file"])
+    text = ""
+    uploaded_doc = None
+    doc_meta = None
+
+    if input_mode == "Paste text":
+        text = st.text_area("Paste untrusted text, prompt, or email content", height=200)
+    else:
+        uploaded_doc = st.file_uploader("Upload document or image", type=["txt", "md", "eml", "pdf", "docx", "jpg", "jpeg", "png", "gif", "bmp", "webp"])
+        if uploaded_doc is not None:
+            doc_bytes = uploaded_doc.read()
+            doc_meta = extract_from_file(doc_bytes, uploaded_doc.name)
+            st.info(f"Extracted from `{uploaded_doc.name}` ({len(doc_bytes)} bytes, format: {doc_meta['extension']})")
+            if doc_meta["image_metadata"]:
+                meta = doc_meta["image_metadata"]
+                st.write(f"Image: {meta['format']} {meta['size']}")
+                if meta["text_comments"]:
+                    with st.expander("Image metadata / comments"):
+                        for c in meta["text_comments"]:
+                            st.text(c)
+                if meta["exif"]:
+                    with st.expander("EXIF data"):
+                        st.json(meta["exif"])
+            text = doc_meta["text"]
+            if text:
+                with st.expander("Extracted text"):
+                    st.text(text)
+
     source = st.selectbox("Source classification", ["untrusted", "unknown", "trusted"])
     decode = st.checkbox("Decode embedded payloads (base64, hex, URL-encoded)", value=True)
     deep = st.checkbox("Deep scan with Gemma 4 (slower, catches subtle attacks)", value=False)
