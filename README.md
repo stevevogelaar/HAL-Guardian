@@ -97,6 +97,8 @@ docs/
 
 ## Getting Started
 
+See [`QUICKSTART.md`](QUICKSTART.md) for the fastest path from install to running UI.
+
 ### Prerequisites
 - Python 3.12+
 - Ollama installed and running
@@ -104,19 +106,22 @@ docs/
 
 ### Install
 ```powershell
-# Using HAL Python wrapper
-.\tools\python-hal -m venv venv
-.\venv\Scripts\Activate.ps1
-.\tools\pip-hal install -r requirements.txt
+# Pull the default local model
+ollama pull gemma4:e2b
+
+# Install Python dependencies
+python -m pip install -r requirements.txt
 ```
 
 ### Run
-```powershell
-# Launch the Streamlit UI
-python -m streamlit run app.py
 
-# Or use the restart helper
-.\tools\Restart-HALGuardianUI.ps1
+**Easiest:** double-click `Start-HALGuardian.bat` in this folder.  
+A terminal opens, starts Streamlit, and prints `http://localhost:8501`.  
+Leave the terminal open and open that URL in your browser.
+
+Or from PowerShell:
+```powershell
+python -m streamlit run app.py
 ```
 
 Then open the URL shown (usually `http://localhost:8501`).
