@@ -164,8 +164,8 @@ elif page == "Subagent Console":
     with st.expander("Show command reference"):
         st.text(help_text())
 
-    cmd = st.selectbox("Command", ["review", "review_code", "scan", "health", "audit"])
-    target = st.text_area("Target (file path, code, or text)", height=120)
+    cmd = st.selectbox("Command", ["review", "review_dir", "review_code", "scan", "health", "audit"])
+    target = st.text_area("Target (file path, directory, code, or text)", height=120)
 
     with st.expander("Modifiers"):
         model = st.text_input("--model", value="gemma4:e2b")
@@ -174,6 +174,7 @@ elif page == "Subagent Console":
         decode = st.selectbox("--decode", ["true", "false"], index=0)
         deep = st.selectbox("--deep", ["false", "true"], index=0)
         deep_model = st.text_input("--deep_model", value="gemma4:e2b")
+        recursive = st.selectbox("--recursive", ["false", "true"], index=0)
         limit = st.number_input("--limit", min_value=1, max_value=200, value=10)
 
     kwargs = {}
@@ -189,6 +190,8 @@ elif page == "Subagent Console":
         kwargs["deep"] = deep
     if deep_model:
         kwargs["deep_model"] = deep_model
+    if recursive:
+        kwargs["recursive"] = recursive
     if limit:
         kwargs["limit"] = int(limit)
 
@@ -199,22 +202,26 @@ elif page == "Subagent Console":
             st.success(f"Agent `{result['agent']}` completed in {result.get('duration_ms', 0)} ms")
         else:
             st.error(f"Subagent failed: {result.get('error')}")
-        st.json(result)
+        st.json(result, expanded=False)
 
     # Quick action presets
     st.markdown("### Quick presets")
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
         if st.button("Scan suspicious email"):
             email_path = Path(DATA_DIR) / "sample_inputs" / "suspicious_email.txt"
             text = email_path.read_text(encoding="utf-8")
             result = run_orchestrator("scan", target=text, source="untrusted")
-            st.json(result)
+            st.json(result, expanded=False)
     with c2:
         if st.button("Review bad_login.php"):
             result = run_orchestrator("review", target="data/sample_code/bad_login.php", model="gemma4:e2b")
-            st.json(result)
+            st.json(result, expanded=False)
     with c3:
         if st.button("Health snapshot"):
             result = run_orchestrator("health")
-            st.json(result)
+            st.json(result, expanded=False)
+    with c4:
+        if st.button("Review sample code dir"):
+            result = run_orchestrator("review_dir", target="data/sample_code", model="gemma4:e2b")
+            st.json(result, expanded=False)

@@ -40,6 +40,7 @@ def main():
     parser.add_argument("--decode", default="", help="Enable payload decoding (true/false)")
     parser.add_argument("--deep", default="", help="Run Gemma 4 deep analysis on suspicious inputs (true/false)")
     parser.add_argument("--deep_model", default="", help="Ollama model for deep analysis")
+    parser.add_argument("--recursive", default="", help="Scan subdirectories for review_dir (true/false)")
     parser.add_argument("--limit", type=int, default=0, help="Number of audit entries")
     parser.add_argument("--pretty", action="store_true", default=True, help="Pretty-print JSON output")
 
@@ -62,6 +63,8 @@ def main():
         kwargs["deep"] = args.deep
     if args.deep_model:
         kwargs["deep_model"] = args.deep_model
+    if args.recursive:
+        kwargs["recursive"] = args.recursive
     if args.limit:
         kwargs["limit"] = args.limit
 

@@ -82,6 +82,40 @@ def _audit(limit: int = 50, **kwargs) -> Dict[str, Any]:
     return {"ok": True, "data": read_audit_tail(limit=limit)}
 
 
+def _review_directory(target: str, model: str, recursive: bool = False, **kwargs) -> Dict[str, Any]:
+    path = Path(target)
+    if not path.exists() or not path.is_dir():
+        return {"ok": False, "error": f"Directory not found: {target}"}
+
+    pattern = "**/*" if recursive else "*"
+    files = [f for f in path.glob(pattern) if f.is_file() and f.stat().st_size <= 500_000]
+    # Filter to likely source files by extension
+    source_exts = {".py", ".php", ".js", ".ts", ".ps1", ".sql", ".html", ".css", ".sh", ".bat",
+                   ".cpp", ".c", ".h", ".java", ".go", ".rs", ".rb", ".swift", ".kt"}
+    files = [f for f in files if f.suffix.lower() in source_exts]
+
+    results = []
+    errors = []
+    for f in files:
+        try:
+            result = review_file(str(f), model=model)
+            results.append({"file": str(f), "review": result.model_dump()})
+        except Exception as e:
+            errors.append({"file": str(f), "error": str(e)})
+
+    return {
+        "ok": True,
+        "data": {
+            "directory": str(path.resolve()),
+            "recursive": recursive,
+            "files_reviewed": len(results),
+            "errors": len(errors),
+            "reviews": results,
+            "failed_files": errors,
+        },
+    }
+
+
 _COMMANDS = {
     "review": {
         "agent": "code_guardian",
@@ -112,6 +146,16 @@ _COMMANDS = {
             {"name": "decode", "required": False, "default": True, "help": "Decode embedded payloads (true|false)"},
             {"name": "deep", "required": False, "default": False, "help": "Run Gemma 4 deep analysis on suspicious inputs (true|false)"},
             {"name": "deep_model", "required": False, "default": DEFAULT_MODEL, "help": "Ollama model for deep analysis"},
+        ],
+    },
+    "review_dir": {
+        "agent": "code_guardian",
+        "handler": _review_directory,
+        "description": "Review all source files in a directory. Optionally recursive.",
+        "args": [
+            {"name": "target", "required": True, "help": "Directory path to scan"},
+            {"name": "model", "required": False, "default": DEFAULT_MODEL, "help": "Ollama model to use"},
+            {"name": "recursive", "required": False, "default": False, "help": "Scan subdirectories (true|false)"},
         ],
     },
     "health": {
@@ -158,7 +202,7 @@ def run(command: str, target: str = "", **kwargs) -> Dict[str, Any]:
         }
 
     # Normalize booleans
-    for key in ["decode", "deep"]:
+    for key in ["decode", "deep", "recursive"]:
         if key in kwargs and isinstance(kwargs[key], str):
             kwargs[key] = kwargs[key].lower() in ("true", "1", "yes", "on")
 
