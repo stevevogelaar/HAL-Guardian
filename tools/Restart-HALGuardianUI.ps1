@@ -2,8 +2,11 @@
 # Run this from PowerShell when the UI asks for a restart.
 # It kills any python process running the HAL Guardian app, then relaunches it.
 
+# Resolve project root relative to this script's location
+$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$ProjectRoot = Split-Path -Parent $scriptRoot
+
 param(
-    [string]$ProjectRoot = "C:\Users\Steve Vogelaar\Documents\_IT Oversight\_The_HAL_Project\Hackathon",
     [string]$Port = "8501"
 )
 

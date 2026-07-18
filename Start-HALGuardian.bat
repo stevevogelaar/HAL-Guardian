@@ -2,11 +2,13 @@
 REM HAL Guardian Streamlit launcher
 REM Kills any existing HAL Guardian Streamlit processes, then starts fresh.
 
-cd /d "C:\Users\Steve Vogelaar\Documents\_IT Oversight\_The_HAL_Project\Hackathon"
+REM Use the directory this batch file lives in as the project root
+set "PROJECT_ROOT=%~dp0"
+cd /d "%PROJECT_ROOT%"
 
 set PYTHON=C:\Users\Steve Vogelaar\AppData\Local\Programs\Python\Python312\python.exe
 set URL=http://localhost:8501
-set APP_PATH=C:\Users\Steve Vogelaar\Documents\_IT Oversight\_The_HAL_Project\Hackathon\app.py
+set "APP_PATH=%PROJECT_ROOT%app.py"
 
 echo.
 echo ============================================
