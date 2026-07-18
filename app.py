@@ -13,7 +13,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR, get_available_models, DEFAULT_MODEL
-from hal_guardian.code_guardian import review_file, review_code
+from hal_guardian.code_guardian import review_file, review_code, suggest_fix_for_finding
 from hal_guardian.trust_shield import scan_input
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
@@ -105,10 +105,16 @@ elif page == "Code Guardian":
                 st.json(result.summary_table)
                 st.markdown("### Structured findings")
                 if result.findings:
-                    for f in result.findings:
+                    for idx, f in enumerate(result.findings):
                         with st.expander(f"{f.severity.upper()} — {f.category} (line {f.line})"):
                             st.write(f.description)
                             st.markdown(f"**Recommendation:** {f.recommendation}")
+                            if f.severity in ("critical", "high", "medium"):
+                                if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_upload_{idx}"):
+                                    with st.spinner(f"Asking {global_model} for a safe fix..."):
+                                        fix = suggest_fix_for_finding(result.raw_response or code, result.language, f, model=global_model)
+                                    st.markdown("**Suggested fix (review before using):**")
+                                    st.code(fix, language=result.language)
                 with st.expander("Raw review (Markdown)"):
                     st.text(result.raw_response)
     else:
@@ -123,10 +129,16 @@ elif page == "Code Guardian":
             st.json(result.summary_table)
             st.markdown("### Structured findings")
             if result.findings:
-                for f in result.findings:
+                for idx, f in enumerate(result.findings):
                     with st.expander(f"{f.severity.upper()} — {f.category} (line {f.line})"):
                         st.write(f.description)
                         st.markdown(f"**Recommendation:** {f.recommendation}")
+                        if f.severity in ("critical", "high", "medium"):
+                            if st.button(f"Suggest fix for finding #{idx + 1}", key=f"fix_paste_{idx}"):
+                                with st.spinner(f"Asking {global_model} for a safe fix..."):
+                                    fix = suggest_fix_for_finding(code, result.language, f, model=global_model)
+                                st.markdown("**Suggested fix (review before using):**")
+                                st.code(fix, language=result.language)
             with st.expander("Raw review (Markdown)"):
                 st.text(result.raw_response)
 

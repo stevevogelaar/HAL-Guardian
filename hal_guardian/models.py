@@ -11,6 +11,7 @@ class Finding(BaseModel):
     line: Optional[str] = ""
     description: str
     recommendation: str
+    suggested_fix: Optional[str] = ""
 
 
 class CodeReviewResult(BaseModel):

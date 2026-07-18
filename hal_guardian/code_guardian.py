@@ -24,11 +24,58 @@ from .models import CodeReviewResult, Finding
 from .audit_engine import log_action
 
 
+__all__ = [
+    "review_file",
+    "review_code",
+    "suggest_fix_for_finding",
+]
+
+
 def _load_prompt(name: str) -> str:
     path = Path(PROMPTS_DIR) / f"{name}.txt"
     if path.exists():
         return path.read_text(encoding="utf-8")
+    if name == "suggest_fix":
+        return "You are a secure code remediation assistant. Suggest a concrete fix."
     return "You are a helpful code reviewer."
+
+
+def _extract_fix(raw: str) -> str:
+    """Extract the FIXED block from the model's suggested-fix response."""
+    match = re.search(r"FIXED:\s*```(?:\w+)?\s*\n([\s\S]*?)\n```", raw, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    # Fallback: look for any fenced code block
+    blocks = re.findall(r"```(?:\w+)?\s*\n([\s\S]*?)\n```", raw)
+    return blocks[-1].strip() if blocks else raw.strip()
+
+
+def suggest_fix_for_finding(
+    code: str,
+    language: str,
+    finding: Finding,
+    model: Optional[str] = None,
+) -> str:
+    """Ask Gemma 4 to suggest a concrete fix for a single finding."""
+    model = model or DEFAULT_MODEL
+    skill = _load_prompt("suggest_fix")
+    prompt = (
+        f"{skill}\n\n"
+        f"LANGUAGE: {language}\n\n"
+        f"FULL FILE:\n```\n{code[:MAX_FILE_CHARS]}\n```\n\n"
+        f"ISSUE TO FIX:\n"
+        f"Severity: {finding.severity}\n"
+        f"Category: {finding.category}\n"
+        f"Line(s): {finding.line}\n"
+        f"Description: {finding.description}\n"
+        f"Recommendation: {finding.recommendation}\n\n"
+        "Provide ORIGINAL, FIXED, and EXPLANATION now."
+    )
+    try:
+        result = _call_ollama(prompt, model)
+        return _extract_fix(result["text"])
+    except Exception as e:
+        return f"[Could not generate fix: {e}]"
 
 
 def _detect_language(file_path: str) -> str:
