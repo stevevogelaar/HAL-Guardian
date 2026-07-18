@@ -19,7 +19,7 @@ echo   - Leave this window open while using HAL Guardian.
 echo   - Press Ctrl+C then Y to stop the server.
 echo.
 
-%PYTHON% -m streamlit run app.py
+%PYTHON% -m streamlit run launch.py
 
 if %errorlevel% neq 0 (
     echo.
