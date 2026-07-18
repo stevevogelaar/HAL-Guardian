@@ -282,12 +282,13 @@ elif page == "Audit Engine":
 elif page == "Health":
     st.subheader("Health — HAL Guardian Status")
     st.markdown("""
-    **What it does:** checks whether Ollama is reachable and summarizes recent activity.
+    **What it does:** checks whether Ollama is reachable, summarizes recent activity, and reports SQLite memory status.
 
     **How to use it**
     1. The snapshot shows total actions, successes, failures, and recent failures.
-    2. It also lists the models currently available in your local Ollama instance.
-    3. If Ollama is not reachable, start it from PowerShell with: `ollama serve`
+    2. It lists the models currently available in your local Ollama instance.
+    3. SQLite memory status shows whether the local database is initialized and how many records it holds.
+    4. If Ollama is not reachable, start it from PowerShell with: `ollama serve`
     """)
     snap = health_snapshot()
     st.json(snap)
@@ -295,6 +296,21 @@ elif page == "Health":
         st.success("Ollama is reachable.")
     else:
         st.error("Ollama is not reachable. Make sure `ollama serve` is running.")
+
+    st.markdown("### SQLite memory status")
+    from hal_guardian.memory import init_db, query_audit, list_prompts, DB_PATH
+    init_db()
+    db_ok = DB_PATH.exists()
+    audit_count = len(query_audit(limit=1000000))
+    prompt_count = len(list_prompts())
+    st.write(f"**Database path:** `{DB_PATH}`")
+    st.write(f"**Database initialized:** {db_ok}")
+    st.write(f"**Audit log rows:** {audit_count}")
+    st.write(f"**Saved prompt rows:** {prompt_count}")
+    if db_ok:
+        st.success("SQLite memory is active.")
+    else:
+        st.error("SQLite database not found.")
 
 elif page == "Subagent Console":
     st.subheader("Subagent Console — Direct Agent Commands")
