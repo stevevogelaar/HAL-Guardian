@@ -1,159 +1,120 @@
-# HAL Guardian — Hackathon Writeup
+# HAL Guardian — Edge/On-Device AI Security Suite
 
 **GDG Windsor Build with AI — Gemma Hackathon 2026**  
 **Track:** Edge / On-Device  
 **Team:** HAL Guardian (Steve Vogelaar + AI collaborator)  
-**License:** Apache 2.0  
-**Public repository:** https://github.com/stevevogelaar/HAL-Guardian.git
+**License:** Apache 2.0
 
 ---
 
-## TL;DR
+## Summary
 
-HAL Guardian is a privacy-first, fully offline security assistant that runs **Google Gemma 4 through Ollama** on the user's own machine. It reviews code, scans untrusted input for prompt injection and hidden payloads, logs every action to a local SQLite-backed store, and exposes all of this through a clean orchestrator that other agents can call. No data leaves the device unless the user explicitly enables the optional webfetch feature.
-
----
-
-## The Problem
-
-AI coding assistants are convenient, but most require sending source code to a cloud API. For security-sensitive work — proprietary code, regulated environments, incident response, or simple privacy preference — that is a non-starter. Even prompt-injection testing can leak data if done remotely.
-
-Local open models change the equation. The challenge is packaging them into a tool that is useful out of the box: structured, auditable, and easy for both humans and other agents to use.
+HAL Guardian is a privacy-first security assistant that runs **Google Gemma 4 through Ollama** entirely on the user's own machine. It reviews code, scans untrusted input for prompt injection and hidden payloads, logs every action to a local SQLite-backed store, and exposes every module as an agent-callable command. The project proves that a local open model can deliver real, practical security value without sending proprietary code or prompts to a cloud API.
 
 ---
 
-## The Solution
+## Problem
 
-HAL Guardian combines multiple security modules into one edge-deployed application:
-
-### 1. Code Guardian
-Reviews source files, pasted code, or fetched web pages locally for:
-- **Security:** hardcoded secrets, SQL injection, unsafe execution, sensitive data exposure
-- **Testing:** missing validation, silent failures, weak error handling
-- **Complexity:** deep nesting, long functions, magic numbers, dead code
-- **Style:** mixing concerns, unused imports, poor separation
-
-It returns a structured verdict (`ship it` / `needs changes` / `needs discussion`) plus parsed findings with severity, category, line reference, description, and recommendation. The original Markdown review is always preserved. For `critical`, `high`, or `medium` findings, users can click **Suggest fix** to request a safe code replacement.
-
-### 2. Trust Shield
-Scans prompts, emails, pasted text, documents, or fetched web pages for:
-- Prompt-injection command language ("ignore previous instructions", "run the following")
-- Destructive imperatives (`rm -rf /`, `drop table`)
-- Encoded payloads (Base64, hex, URL-encoded)
-- Meta-instruction framing
-
-A fast deterministic scan runs instantly. A **deep scan** optionally calls Gemma 4 for a second opinion on intent, severity, confidence, and recommended action. A redacted / sanitized copy of the input is shown for safe sharing.
-
-### 3. Audit Engine
-Every review and scan is appended to a local JSONL log and mirrored to SQLite with timestamps, targets, models, durations, success flags, and metadata. The health dashboard reports Ollama reachability and recent failure patterns.
-
-### 4. Subagent Orchestrator
-HAL Guardian is not just a UI. A central dispatcher exposes every module as a command (`review`, `review_dir`, `review_code`, `scan`, `health`, `audit`) with a standard JSON envelope. Humans can call it from the CLI, scripts can call it from PowerShell, and another AI agent can call it as a tool.
-
-### 5. Model Playground
-A free-form chat tab lets users test prompts against any local model, tune temperature, save useful prompts to the project library, and browse starter prompts.
-
-### 6. Document & Web Support
-- Code Guardian and Trust Shield accept `.txt`, `.md`, `.eml`, `.pdf`, `.docx`, `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, and `.webp`.
-- Text is extracted locally; images get EXIF/metadata extraction and OCR-ready text comments.
-- Optional **webfetch** lets the modules analyze a live URL, controlled by a domain whitelist and an explicit confirmation step.
+Most AI coding assistants require uploading source code to a remote API. That is unacceptable for proprietary code, regulated environments, incident response, or anyone who simply values privacy. Even prompt-injection testing can leak data if done remotely. The challenge is packaging a local open model into a tool that is structured, auditable, and useful out of the box.
 
 ---
 
-## Why Gemma 4
+## Solution
 
-- **Apache 2.0 license** — free for commercial use, no API keys, no usage limits
-- **Local execution** — zero latency, zero data leakage
-- **Flexible quantization** — choose model size/precision for the target hardware
-- **Strong reasoning** — produces structured security reviews and threat analysis without a cloud dependency
+HAL Guardian combines five layers into one desktop application:
+
+1. **Code Guardian** reviews files, pasted code, or fetched web pages for security, testing, complexity, and style issues, returning a verdict and structured findings.
+2. **Trust Shield** scans prompts, emails, documents, and web pages for prompt-injection language, destructive commands, and encoded payloads, with an optional Gemma 4 deep scan.
+3. **Audit Engine** records every action to JSONL and SQLite with timestamps, targets, models, and metadata.
+4. **Subagent Orchestrator** exposes every module as a command (`review`, `review_dir`, `review_code`, `scan`, `health`, `audit`) with a standard JSON envelope, so scripts or other agents can call HAL Guardian as a tool.
+5. **Model Playground** lets users chat with any local Ollama model and save useful prompts.
+
+Document and image extraction, URL fetching, model inference, and logging all happen locally by default. Optional webfetch is opt-in, whitelist-controlled, and confirm-before-send.
 
 ---
 
 ## Architecture
 
-```
-hal_guardian/
-├── code_guardian.py       # Gemma 4 code review + Markdown parser
-├── trust_shield.py        # Deterministic scanner + optional Gemma deep scan
-├── audit_engine.py        # JSONL logging + health snapshots
-├── orchestrator.py        # Central subagent dispatcher
-├── models.py              # Shared Pydantic schemas
-├── config.py              # Settings and model selection
-├── memory.py              # SQLite persistence for audit, prompts, webfetch settings
-├── webfetch.py            # Safe, whitelist-controlled URL fetcher
-├── document_extract.py    # Local text extraction from documents and images
-└── prompts/               # System prompts for agents
+The stack is modular and local-first:
 
-app.py                       # Streamlit UI
-Start-HALGuardian.bat        # One-click launcher
-orchestrate.py               # CLI entry point
-frontend/                    # PowerShell start/stop helpers
+- `app.py` — Streamlit UI with sidebar navigation and module pages.
+- `hal_guardian/code_guardian.py` — builds prompts, calls Ollama, parses Markdown reviews.
+- `hal_guardian/trust_shield.py` — deterministic scanner plus optional Gemma 4 deep analysis.
+- `hal_guardian/orchestrator.py` — central dispatcher for all subagent commands.
+- `hal_guardian/audit_engine.py` + `memory.py` — JSONL and SQLite persistence.
+- `hal_guardian/webfetch.py` — safe URL fetcher with whitelist and confirmation.
+- `hal_guardian/document_extract.py` — local extraction from txt/md/eml/pdf/docx/images.
+- `prompts/` — system prompts and saved prompt library.
+- `audits/` and `data/` — local logs, SQLite DB, sample data, and live demo HTML pages.
 
-audits/
-└── hal-guardian-audit.jsonl
-
-data/
-├── sample_code/             # Demo files
-├── sample_inputs/           # Demo untrusted input
-└── live-docs/               # Live demo HTML pages for webfetch
-```
+All inference calls go to `http://127.0.0.1:11434`. No cloud APIs, telemetry, or API keys are required.
 
 ---
 
-## How to Run
+## How Gemma 4 Is Used
+
+Gemma 4 is the reasoning engine behind every AI-driven feature:
+
+- **Code Guardian** sends a structured prompt with the target file, language, and a request for categorized findings. The model returns Markdown with severity, category, line reference, description, and recommendation. A lightweight parser extracts structured findings while the full Markdown is preserved.
+- **Trust Shield Deep Scan** sends suspicious text to Gemma 4 for intent analysis, returning trust level, confidence, severity, and recommended action.
+- **Model Playground** lets users chat directly with any pulled Ollama model, including quantized variants.
+- **Suggest Fix** asks Gemma 4 to produce a safe code replacement for a specific finding.
+
+We use Gemma 4 because it is Apache 2.0 licensed, runs locally through Ollama, supports flexible quantization, and produces structured security analysis without a cloud dependency.
+
+---
+
+## Challenges and Decisions
+
+### Mixed model output formats
+Gemma 4 does not always use the exact Markdown template we request, especially for mixed-language fetched code or long inputs. We solved this by making the parser tolerant: it looks for an explicit summary table, falls back to counting category-specific headings, and always keeps the raw Markdown as the source of truth.
+
+### Long inputs exceeding context
+Large files can exceed the 8K context window. We added a compact-prompt fallback that truncates code and asks for a shorter review, then logs when the fallback is used.
+
+### Document and image extraction
+Users want to drop in PDFs, emails, or screenshots. We added `document_extract.py` to handle `txt/md/eml/pdf/docx` and read metadata plus text comments from images locally, keeping the privacy promise intact.
+
+### Safe live webfetch
+Fetching URLs introduces SSRF, privacy, and payload risks. We made webfetch disabled by default, restricted by a domain whitelist, gated by a confirmation checkbox, and size-limited. This lets the demo analyze live pages without exposing the user by default.
+
+### Persistent settings across restarts
+Streamlit restarts clear UI state. We added `memory.py` with SQLite to persist webfetch settings, whitelist/blacklist, saved prompts, and audit logs, so the tool feels like a real desktop app rather than a transient script.
+
+---
+
+## Live Demo
+
+HAL Guardian is a local desktop application, so the live demo is provided as publicly accessible test pages that the UI can fetch and analyze during a screen recording:
+
+- **Broken code page:** `https://itoversight.ca/Hal_Guardian/broken-code-page.html`
+- **Injection test page:** `https://itoversight.ca/Hal_Guardian/injection-test-page.html`
+
+To run the application locally:
 
 ```powershell
-# Install dependencies
-python -m pip install -r requirements.txt
-
-# Make sure Ollama is running and Gemma 4 is pulled
 ollama pull gemma4:e2b
-ollama serve
-
-# Launch the UI
+python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-Or simply double-click `Start-HALGuardian.bat`.
+Or double-click `Start-HALGuardian.bat`.
 
 ---
 
-## Demo Highlights
+## Project Links
 
-- **Code Guardian** reviews `data/sample_code/bad_login.php` and flags SQL injection, hardcoded credentials, and plain-text password handling as structured findings.
-- **Trust Shield** scans `data/sample_inputs/suspicious_email.txt`, decodes a Base64 payload, and detects the destructive `rm -rf /` command.
-- **Subagent Console** runs `review_dir data/sample_code` to batch-review every source file in a folder.
-- **Model Playground** lets users chat with Gemma 4 and save useful prompts.
-- **Audit Engine** shows every action logged locally.
-- **Webfetch** (optional) analyzes live demo pages:
-  - `https://itoversight.ca/Hal_Guardian/broken-code-page.html`
-  - `https://itoversight.ca/Hal_Guardian/injection-test-page.html`
+- **Public code repository:** https://github.com/stevevogelaar/HAL-Guardian.git
+- **Live demo pages:** https://itoversight.ca/Hal_Guardian/
+- **Video walkthrough:** (to be recorded after final UI freeze)
 
 ---
 
-## Webfetch Safety
-
-Webfetch is disabled by default. HAL Guardian is a local proof-of-concept, not enterprise-grade isolation software. Live webfetch can:
-- Send fetched content to your local Ollama model, including any malicious payloads on the page.
-- Reveal your IP address and environment to the remote site.
-- Allow requests to internal services or cloud metadata endpoints if the whitelist is misconfigured.
-
-Recommended controls: keep webfetch off unless needed, whitelist only trusted domains, require confirmation before sending fetched content to the model, and keep the download size small.
-
----
-
-## What's Next
+## Next Steps
 
 - Exportable PDF/Markdown reports from the UI
-- Extend the parser to support more model output styles
+- Extend the parser for more model output styles
 - Add a `reverify` subagent that re-checks flagged findings
 - Package HAL Guardian as an installable Python wheel
 
----
-
-## Submission Links
-
-- **Public repository:** https://github.com/stevevogelaar/HAL-Guardian.git
-- **Live demo video:** (to be recorded after final UI freeze)
-
-HAL Guardian proves that local open models can deliver real, practical security value without sacrificing privacy.
+HAL Guardian demonstrates that local open models can serve as a strong foundational asset for privacy-preserving security tooling.
