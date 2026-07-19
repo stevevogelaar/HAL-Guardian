@@ -67,6 +67,7 @@ with st.sidebar:
 
 st.title(f"{APP_ICON} {APP_TITLE}")
 st.caption(f"Runs locally on {global_model} via Ollama. Nothing leaves your machine unless you choose to export it.")
+st.info("Note: switching sidebar modules while a local model is running will cancel the current operation. Wait for results before changing tabs.", icon="ℹ️")
 
 if page == "Home":
     st.markdown("""
@@ -103,6 +104,9 @@ elif page == "Code Guardian":
     5. Expand **Raw review (Markdown)** to see the full model output.
 
     All review data is logged to `audits/hal-guardian-audit.jsonl`.
+
+    Webfetch is proof-of-concept: fetched content is sent to your local Ollama model, URLs may expose your IP or internal network,
+    and fetched pages can contain malicious payloads. Only enable it on trusted networks with a narrow whitelist.
     """)
     cg_options = ["Upload a file", "Paste code"]
     if get_webfetch_enabled():
@@ -281,6 +285,9 @@ elif page == "Trust Shield":
 
     Redacted text is shown at the bottom so you can share sanitized versions safely.
     File extraction happens locally. Webfetch only sends a network request when you explicitly enable it and click Fetch.
+
+    Webfetch is proof-of-concept: fetched content is sent to your local Ollama model, URLs may expose your IP or internal network,
+    and fetched pages can contain malicious payloads. Only enable it on trusted networks with a narrow whitelist.
     """)
 
     webfetch_enabled = get_webfetch_enabled()
@@ -728,7 +735,15 @@ elif page == "Settings":
         st.rerun()
 
     if get_webfetch_enabled():
-        st.warning("Webfetch is enabled. Only whitelisted domains are allowed. Use with caution on private networks.")
+        st.warning(
+            "Webfetch is enabled. Only whitelisted domains are allowed. "
+            "HAL Guardian is a local proof-of-concept, not enterprise-grade isolation software. "
+            "Live webfetch can introduce security and privacy risks: fetched content is sent to your local Ollama model, "
+            "external pages may track requests, contain malicious payloads, or expose internal network structure, "
+            "and a misconfigured whitelist could allow retrieval of intranet or cloud metadata. "
+            "Use it only on trusted networks and verify URLs before analyzing fetched content.",
+            icon="⚠️",
+        )
 
     confirm = st.checkbox("Require confirmation before sending fetched content to LLM", value=get_webfetch_confirm())
     set_webfetch_confirm(confirm)
@@ -842,8 +857,27 @@ elif page == "Manual":
 
     ---
 
+    ### Settings — Webfetch & Safety
+
+    Webfetch lets Code Guardian and Trust Shield fetch a live URL for analysis. It is **off by default** and should only be enabled for trusted, narrow use cases.
+
+    **Why webfetch is a proof-of-concept, not enterprise-safe**
+    - Fetched content is sent to your local Ollama model. If the page contains malicious payloads, your model and host process see them.
+    - The remote site learns your IP address and may fingerprint your environment.
+    - A misconfigured whitelist can let Guardian request internal services or cloud metadata endpoints (e.g., `http://169.254.169.254/` or private hostnames).
+    - Network errors, redirects, or oversized responses can leak information about what is reachable from your machine.
+
+    Recommended controls:
+    1. Keep webfetch **disabled** unless you need it for a specific demo.
+    2. Only whitelist domains you control or fully trust.
+    3. Use the **confirm before sending** checkbox so fetched text is not passed to the model until you approve it.
+    4. Use a small **Max download size** to reduce the chance of downloading huge or unexpected content.
+    5. Run HAL Guardian on a trusted network and never point it at internal admin panels or cloud metadata URLs.
+
+    ---
+
     ### Privacy
-    All reasoning happens locally through Ollama. Your code, prompts, and data do not leave the machine unless you choose to export them.
+    All reasoning happens locally through Ollama. Your code, prompts, and data do not leave the machine unless you choose to export them or use the optional webfetch feature.
 
     ---
 

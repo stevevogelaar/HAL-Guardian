@@ -2,23 +2,24 @@
 
 ## Overview
 
-HAL Guardian is a single-desktop application with a Streamlit front end and a modular Python back end. Every AI inference call goes to a local Ollama instance running Gemma 4. No cloud APIs are used.
+HAL Guardian is a single-desktop application with a Streamlit front end and a modular Python back end. Every AI inference call goes to a local Ollama instance running Gemma 4. No cloud APIs are used unless the user explicitly enables the optional webfetch feature.
 
 ---
 
 ## Core Modules
 
 ### `app.py` — Streamlit UI
-- Sidebar navigation across Code Guardian, Trust Shield, Audit Log, and Health Dashboard.
-- Handles file uploads, text input, model selection, and result display.
+- Sidebar navigation across Home, Code Guardian, Trust Shield, Audit Engine, Health, Subagent Console, Model Playground, Settings, and Manual.
+- Handles file uploads, text input, model selection, URL fetch inputs, and result display.
 - Calls back-end modules and renders Markdown/JSONL outputs.
+- Shows an info note that switching modules cancels an in-flight local model call.
 
 ### `code_guardian.py` — Code Review Engine
-- Loads target file or pasted code.
+- Loads target file, pasted code, or text extracted from a fetched URL.
 - Reads system prompt from `prompts/code_review.txt`.
-- Sends prompt + code to local Ollama `gemma4:*` model via `/api/generate` or `ollama.chat()`.
+- Sends prompt + code to local Ollama `gemma4:*` model via `ollama.chat()`.
 - Parses structured review into Pydantic `CodeReviewResult`.
-- Falls back to compact prompt if context window is exceeded.
+- Falls back to a compact prompt if context window is exceeded.
 
 ### `trust_shield.py` — Input Sanitizer
 - Pattern matching for command-language, encoded payloads, meta-instructions.
@@ -28,8 +29,25 @@ HAL Guardian is a single-desktop application with a Streamlit front end and a mo
 
 ### `audit_engine.py` — Logging & Verification
 - Appends every action to `audits/hal-guardian-audit.jsonl`.
+- Mirrors entries to SQLite through `memory.py`.
 - Reads log tail for dashboard and failure pattern detection.
 - Provides `verify()` helper to re-check previously flagged items.
+
+### `memory.py` — SQLite Persistence
+- Stores audit log entries.
+- Persists saved prompts and the Model Playground prompt library.
+- Persists webfetch settings, whitelist, and blacklist.
+
+### `webfetch.py` — Safe URL Fetcher
+- Disabled by default; can be toggled in Settings.
+- Enforces a domain whitelist and an optional confirmation step.
+- Limits download size and strips HTML to text for analysis.
+- Used by Code Guardian and Trust Shield when **Fetch URL** is selected.
+
+### `document_extract.py` — Local Document Parser
+- Extracts text from `.txt`, `.md`, `.eml`, `.pdf`, and `.docx`.
+- Reads metadata and EXIF/comments from images (`.jpg`, `.png`, `.gif`, `.bmp`, `.webp`).
+- All processing happens locally.
 
 ### `models.py` — Shared Data Models
 Pydantic models for:
@@ -37,6 +55,7 @@ Pydantic models for:
 - `TrustReport`
 - `AuditEntry`
 - `HealthSnapshot`
+- `SavedPrompt`
 
 ### `config.py` — Configuration
 - Default model: `gemma4:e2b`
@@ -49,7 +68,7 @@ Pydantic models for:
 ## Data Flow
 
 ```
-User Input (file/text)
+User Input (file / text / URL)
     │
     ▼
 Streamlit UI (app.py)
@@ -58,7 +77,11 @@ Streamlit UI (app.py)
     │
     ├──▶ trust_shield.py ──▶ Pattern rules (+ optional Gemma 4) ──▶ TrustReport
     │
-    └──▶ audit_engine.py ──▶ JSONL log + HealthSnapshot
+    ├──▶ document_extract.py ──▶ extracted text / metadata
+    │
+    ├──▶ webfetch.py ──▶ fetched text (if enabled + whitelisted + confirmed)
+    │
+    └──▶ audit_engine.py + memory.py ──▶ JSONL + SQLite logs + HealthSnapshot
 ```
 
 ---
@@ -67,8 +90,9 @@ Streamlit UI (app.py)
 
 1. All source code files are read from local disk only.
 2. Ollama is called via `127.0.0.1` — never an external endpoint.
-3. Audit logs stay in `audits/` under project root.
+3. Audit logs stay in `audits/` and SQLite under the project root.
 4. No telemetry, no API keys, no cloud dependencies.
+5. Webfetch is opt-in, whitelist-controlled, and confirm-before-send by default.
 
 ---
 
@@ -79,6 +103,7 @@ Adding a new tool means:
 2. Add a system prompt in `prompts/`
 3. Wire a new page in `app.py`
 4. Log actions via `audit_engine.py`
+5. Persist settings via `memory.py`
 
 ---
 
@@ -88,6 +113,7 @@ Adding a new tool means:
 - Generated code is displayed only; execution requires user action outside the app.
 - Suspicious inputs are quarantined in the report, not passed downstream.
 - The app itself does not require elevated privileges.
+- Webfetch is restricted by whitelist and confirmation to reduce SSRF / data-exfiltration risk.
 
 ---
 
@@ -100,7 +126,7 @@ Adding a new tool means:
 | LLM Model | Google Gemma 4 |
 | Language | Python 3.12 |
 | Validation | Pydantic |
-| Logs | JSONL |
+| Logs | JSONL + SQLite |
 | Packaging | pip + venv |
 
 ---
@@ -116,6 +142,6 @@ Adding a new tool means:
 ## Future Enhancements
 
 - Obsidian vault export for generated reports.
-- Batch directory scanning.
-- Plugin architecture for custom review rules.
 - Diff-based review (before/after PR changes).
+- Plugin architecture for custom review rules.
+- Packaged installable wheel.
