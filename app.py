@@ -35,7 +35,30 @@ from hal_guardian.memory import (
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
 
-st.set_page_config(page_title=APP_TITLE, page_icon=APP_ICON, layout="wide")
+st.set_page_config(
+    page_title=APP_TITLE,
+    page_icon=APP_ICON,
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Remove Streamlit's default page transition / animation CSS for snappier navigation
+st.markdown(
+    """
+    <style>
+    /* Disable fade/scale transitions on page navigation */
+    .stApp [data-testid="stAppViewContainer"] {
+        animation: none !important;
+        transition: none !important;
+    }
+    /* Disable spinner / loading animation transitions where possible */
+    .stSpinner {
+        animation: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Discover available local models
 _available_models = get_available_models()
