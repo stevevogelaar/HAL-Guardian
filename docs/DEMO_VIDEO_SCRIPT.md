@@ -7,7 +7,7 @@
 
 ---
 
-## Section 1 — Hook (0:00–0:30)
+## Section 1 — Hook (0:00–0:35)
 
 **Shot:** Static title card with logo + tagline, then fade into the HAL Guardian UI on the Home page.
 
@@ -15,6 +15,8 @@
 > What if you could get AI-powered code review and threat detection without ever sending your source code to the cloud?
 >
 > Meet HAL Guardian. It runs Google's Gemma 4 model entirely on your machine through Ollama. Your code, your prompts, your documents — they never leave your device unless you explicitly choose otherwise.
+>
+> Even the optional webfetch feature, which lets you analyze live URLs, is off by default, whitelist-controlled, and asks for confirmation before sending anything to the model. Because privacy and safety are not afterthoughts here.
 >
 > In this demo, you'll see a full walkthrough of every module.
 

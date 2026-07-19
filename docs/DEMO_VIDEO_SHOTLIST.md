@@ -13,7 +13,7 @@
 | # | Section | Visual | Approx. Final Time | Notes |
 |---|---|---|---|---|
 | 1 | Title card | Static title card with logo, tagline, GitHub link | 0:00–0:08 | Use project font; clean background |
-| 2 | Fade to Home | HAL Guardian UI Home page | 0:08–0:30 | Show model selector and Ollama status |
+| 2 | Fade to Home | HAL Guardian UI Home page | 0:08–0:35 | Show model selector and Ollama status; audio introduces safety framing |
 | 3 | Settings page | Webfetch toggle OFF, whitelist empty, warning banner visible | 0:30–0:55 | Add `itoversight.ca` to whitelist on screen |
 | 4 | Code Guardian setup | Mode: Upload a file; select `bad_login.php` | 0:55–1:10 | Keep file dialog visible briefly |
 | 5 | Code Guardian review | Spinner / "Asking gemma4:e2b..." | 1:10–1:18 | Jump cut here; add "Results in ~12s" overlay if desired |
