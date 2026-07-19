@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "project": "HAL Guardian",
+  "description": "A local-first AI security assistant powered by Google Gemma 4 through Ollama. Every review, scan, and chat runs on the user's machine.",
+  "base_command": "python orchestrate.py",
+  "runtime": {
+    "language": "python",
+    "requires": ["Ollama running locally", "Gemma 4 model pulled"],
+    "environment": "Windows PowerShell or Command Prompt"
+  },
+  "tools": [
+    {
+      "name": "review",
+      "description": "Review a single source file for security, testing, complexity, and style issues.",
+      "agent": "code_guardian",
+      "parameters": [
+        {
+          "name": "target",
+          "type": "file_path",
+          "required": true,
+          "description": "Path to the source file to review. Example: data/sample_code/bad_login.php"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "default": "gemma4:e2b",
+          "description": "Ollama model to use for the review."
+        }
+      ]
+    },
+    {
+      "name": "review_dir",
+      "description": "Batch-review every source file in a directory.",
+      "agent": "code_guardian",
+      "parameters": [
+        {
+          "name": "target",
+          "type": "directory_path",
+          "required": true,
+          "description": "Path to the directory containing source files. Example: data/sample_code"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "default": "gemma4:e2b",
+          "description": "Ollama model to use for each review."
+        },
+        {
+          "name": "recursive",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Whether to recurse into subdirectories."
+        }
+      ]
+    },
+    {
+      "name": "review_code",
+      "description": "Review pasted code text directly.",
+      "agent": "code_guardian",
+      "parameters": [
+        {
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "description": "Code snippet to review."
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "required": false,
+          "default": "text",
+          "description": "Programming language hint. Example: python, php, javascript"
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "default": "gemma4:e2b",
+          "description": "Ollama model to use for the review."
+        }
+      ]
+    },
+    {
+      "name": "scan",
+      "description": "Scan untrusted text, prompts, or email content for prompt injection, destructive commands, and encoded payloads.",
+      "agent": "trust_shield",
+      "parameters": [
+        {
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "description": "Text content to scan."
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "required": false,
+          "default": "untrusted",
+          "enum": ["trusted", "untrusted", "unknown"],
+          "description": "Classification of the input source."
+        },
+        {
+          "name": "decode",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Decode embedded base64, hex, and URL-encoded payloads."
+        },
+        {
+          "name": "deep",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Run an optional Gemma 4 deep-analysis scan."
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "required": false,
+          "default": "gemma4:e2b",
+          "description": "Ollama model to use for the deep scan."
+        }
+      ]
+    },
+    {
+      "name": "health",
+      "description": "Return the local environment status: Ollama reachability, available models, and recent action counts.",
+      "agent": "audit_engine",
+      "parameters": []
+    },
+    {
+      "name": "audit",
+      "description": "Return recent audit log entries.",
+      "agent": "audit_engine",
+      "parameters": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "required": false,
+          "default": 50,
+          "description": "Number of recent entries to return."
+        }
+      ]
+    }
+  ]
+}
