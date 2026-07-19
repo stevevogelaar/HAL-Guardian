@@ -143,15 +143,54 @@ def _call_ollama(prompt: str, model: str) -> dict:
 
 
 def _extract_summary_table(raw: str) -> dict:
-    """Try to extract issue counts from the Markdown summary table."""
+    """Try to extract issue counts from the Markdown summary table.
+
+    Falls back to inferring counts from structured headings if no table is found.
+    """
     summary = {"security": 0, "testing": 0, "complexity": 0, "style": 0}
-    # Match lines like: | **Security** | 5 |
+
+    # 1. Try explicit Markdown table: | Category | Issues Found |
+    table_pattern = re.compile(
+        r"\|\s*\*?\*?Category\*?\*?\s*\|\s*\*?\*?Issues?\s+Found\*?\*?\s*\|"
+        r".*?\n(.*?)\n\s*\|?\s*[-=]+",
+        re.IGNORECASE | re.DOTALL,
+    )
+    table_match = table_pattern.search(raw)
+    if table_match:
+        row_pattern = re.compile(r"\|\s*\*?\*?([^|*]+)\*?\*?\s*\|\s*(\d+)\s*\|")
+        for match in row_pattern.finditer(table_match.group(1)):
+            cat = match.group(1).strip().lower().replace("**", "").replace("*", "")
+            count = int(match.group(2))
+            if cat in summary:
+                summary[cat] = count
+        if any(v > 0 for v in summary.values()):
+            return summary
+
+    # 2. Try table without headers matching known patterns
     pattern = re.compile(r"\|\s*\*?\*?([^|*]+)\*?\*?\s*\|\s*(\d+)\s*\|", re.IGNORECASE)
     for match in pattern.finditer(raw):
         cat = match.group(1).strip().lower().replace("**", "").replace("*", "")
         count = int(match.group(2))
         if cat in summary:
             summary[cat] = count
+    if any(v > 0 for v in summary.values()):
+        return summary
+
+    # 3. Fallback: infer from explicit category/severity sections
+    section_map = {
+        "security": r"(?:^|\n)\s*#+\s*.*(?:Security|Vulnerabilities|Security Findings).*\n",
+        "testing": r"(?:^|\n)\s*#+\s*.*(?:Testing|Robustness|Error Handling).*\n",
+        "complexity": r"(?:^|\n)\s*#+\s*.*(?:Complexity|Maintainability).*\n",
+        "style": r"(?:^|\n)\s*#+\s*.*(?:Style|Formatting|Readability).*\n",
+    }
+    for cat, pat in section_map.items():
+        if re.search(pat, raw, re.IGNORECASE):
+            # Count severity-labeled items under that section
+            section_start = re.search(pat, raw, re.IGNORECASE).end()
+            section_text = raw[section_start : section_start + 3000]
+            severity_counts = len(re.findall(r"\*\*Severity:\*\*\s*(critical|high|medium|low)", section_text, re.IGNORECASE))
+            summary[cat] = severity_counts
+
     return summary
 
 
@@ -159,8 +198,8 @@ def _extract_findings(raw: str) -> List[Finding]:
     """Best-effort parser for Gemma 4 Markdown findings lists."""
     findings: List[Finding] = []
 
-    # Split on heading patterns like #### Finding 1: ...
-    blocks = re.split(r"\n(?=####\s*Finding\s*\d+|\*\*\d+\.\s+.*\*\*|\*\*[A-Z][a-z]+\s+\w+.*\*\*)", raw, flags=re.IGNORECASE)
+    # Split on heading patterns like #### Finding 1: ..., **1. ...**, or ### Critical Security Findings
+    blocks = re.split(r"\n(?=####\s*Finding\s*\d+|\*\*\d+\.\s+.*\*\*|\*\*[A-Z][a-z]+\s+\w+.*\*\*|###\s+.*(?:Security|Testing|Complexity|Style).*)", raw, flags=re.IGNORECASE)
 
     severity_re = re.compile(r"\*\*Severity:\*\*\s*(critical|high|medium|low)", re.IGNORECASE)
     category_re = re.compile(r"\*\*Category:\*\*\s*(security|testing|complexity|style)", re.IGNORECASE)
