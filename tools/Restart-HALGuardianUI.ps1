@@ -27,5 +27,40 @@ if ($StopOnly) {
     exit 0
 }
 
+# Ensure Ollama is reachable before launching the UI
+$ollamaExe = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
+$ollamaUrl = "http://127.0.0.1:11434"
+
+try {
+    $null = Invoke-WebRequest -Uri $ollamaUrl -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+    Write-Host "Ollama is reachable."
+}
+catch {
+    if (Test-Path $ollamaExe) {
+        Write-Host "Ollama not reachable. Starting $ollamaExe..."
+        Start-Process -FilePath $ollamaExe -ArgumentList "serve" -WindowStyle Hidden
+        $tries = 0
+        while ($tries -lt 15) {
+            Start-Sleep -Seconds 2
+            try {
+                $null = Invoke-WebRequest -Uri $ollamaUrl -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+                Write-Host "Ollama is now running."
+                break
+            }
+            catch {
+                $tries++
+            }
+        }
+        if ($tries -ge 15) {
+            Write-Host "ERROR: Ollama still not reachable after auto-start. Please start it manually."
+            exit 1
+        }
+    }
+    else {
+        Write-Host "ERROR: Ollama executable not found at $ollamaExe. Please install Ollama."
+        exit 1
+    }
+}
+
 Write-Host "Starting HAL Guardian Streamlit on port $Port..."
 & $python -m streamlit run $app --server.headless true --server.port $Port
