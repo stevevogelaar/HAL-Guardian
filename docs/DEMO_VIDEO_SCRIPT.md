@@ -1,209 +1,182 @@
-# HAL Guardian — Demo Video Script
+# HAL Guardian — Educational Demo Video Script
 
-**Target final length:** 3:30 – 4:30  
-**Voice:** Friendly, direct, second-person — speak to the viewer.  
-**Recording:** Screen capture of local Streamlit UI + separate voice-over in DaVinci Resolve.  
-**Editing:** Jump cuts over model-thinking time; show results with optional "Results in X seconds" overlay.
+**Project type:** Local proof-of-concept AI security assistant  
+**Tone:** Educational, technical demo — not promotional  
+**Target final length:** 4:00 – 5:30  
+**Voice:** Clear, direct, instructional; second-person is acceptable but avoid sales language  
+**Recording:** Screen capture of local Streamlit UI + separate voice-over in DaVinci Resolve  
+**Editing:** Jump cuts over model-thinking time are expected and helpful
 
 ---
 
-## Section 1 — Hook (0:00–0:35)
+## Section 1 — Introduction (0:00–0:45)
 
-**Shot:** Static title card with logo + tagline, then fade into the HAL Guardian UI on the Home page.
+**Shot:** Title card, then fade into the HAL Guardian Home page.
 
 **Script:**
-> What if you could get AI-powered code review and threat detection without ever sending your source code to the cloud?
+> HAL Guardian is a proof-of-concept, local-first security assistant. It uses Google's Gemma 4 model, served through Ollama, to analyze code and untrusted input without sending data to a cloud API.
 >
-> Meet HAL Guardian. It runs Google's Gemma 4 model entirely on your machine through Ollama. Your code, your prompts, your documents — they never leave your device unless you explicitly choose otherwise.
+> This demo walks through the tool's architecture, its security model, and each of its five modules: Code Guardian, Trust Shield, Audit Engine, Subagent Console, and Model Playground.
 >
-> Even the optional webfetch feature, which lets you analyze live URLs, is off by default, whitelist-controlled, and asks for confirmation before sending anything to the model. Because privacy and safety are not afterthoughts here.
->
-> In this demo, you'll see a full walkthrough of every module.
+> Everything shown runs on this machine. The model endpoint is `127.0.0.1:11434`. There are no API keys, no telemetry, and no remote inference by default.
 
 **On-screen:**
-- Title: `HAL Guardian — Edge/On-Device AI Security Suite`
-- Subtitle: `Built with Google Gemma 4 + Ollama`
-- GitHub: `github.com/stevevogelaar/HAL-Guardian`
+- Title: `HAL Guardian — Local AI Security Assistant Demo`
+- Subtitle: `Edge deployment with Gemma 4 and Ollama`
+- Link: `github.com/stevevogelaar/HAL-Guardian`
 
 ---
 
-## Section 2 — Why Local First (0:30–0:55)
+## Section 2 — Architecture and Security Model (0:45–1:40)
 
-**Shot:** Home page showing Ollama status, active model dropdown, and recent activity snapshot.
+**Shot:** Home page, then Settings page. Move slowly; let the viewer read the UI.
 
 **Script:**
-> Right away, HAL Guardian shows you which local model is active and whether Ollama is reachable.
+> The architecture is straightforward. The front end is a Streamlit application. The back end is a set of Python modules that build prompts, call Ollama, parse responses, log actions, and persist settings.
 >
-> This matters because most AI coding tools send your code to an API. HAL Guardian doesn't. Everything goes to `127.0.0.1:11434`. That is your local Ollama instance.
+> `code_guardian.py` handles code review. `trust_shield.py` handles input scanning. `orchestrator.py` exposes every module as a callable command. `audit_engine.py` and `memory.py` handle logging and persistence, using JSONL and SQLite.
 >
-> Even the audit logs and saved settings live right here on your machine, in JSONL and SQLite.
+> `document_extract.py` reads local files and image metadata. `webfetch.py` provides optional URL fetching, but it is disabled by default.
+>
+> The security model is built on a few simple rules. Inference stays local. Audit logs stay local. Model output is never executed automatically. The optional webfetch feature is gated by a whitelist and an explicit confirmation step, so fetched content is never passed to the model without approval.
 
-**On-screen callout:**
+**On-screen callouts:**
+- `Ollama host: 127.0.0.1:11434`
 - `Active model: gemma4:e2b`
-- `Ollama status: reachable`
-- `Logs: local only`
+- Webfetch toggle: `OFF`
+- Whitelist panel visible
 
 ---
 
-## Section 3 — Settings and Webfetch Safety (0:55–1:25)
+## Section 3 — Code Guardian (1:40–2:45)
 
-**Shot:** Settings page. Show the webfetch toggle off by default, the whitelist, and the warning banner.
-
-**Script:**
-> Before we run any tools, let's talk about trust.
->
-> HAL Guardian has an optional webfetch feature, but it is off by default. When it is on, it only allows whitelisted domains and asks for confirmation before sending fetched content to the model.
->
-> This is a proof-of-concept, not enterprise isolation software. A live fetch can expose your IP, download malicious content, or reach internal services if the whitelist is misconfigured. So we keep the guardrails tight.
->
-> For this demo, we'll use two public test pages hosted at itoversight.ca.
-
-**On-screen:**
-- Warning banner text visible
-- `itoversight.ca` added to whitelist
-- `Require confirmation before sending` checkbox checked
-
----
-
-## Section 4 — Code Guardian (1:25–2:15)
-
-**Shot:** Code Guardian page. Upload `data/sample_code/bad_login.php` and run the review.
+**Shot:** Code Guardian page. Upload `data/sample_code/bad_login.php`.
 
 **Script:**
-> Now let's review some code.
+> Code Guardian reviews source code, pasted text, or fetched web content. The module reads the file, selects a system prompt based on the detected language, and sends a structured request to Gemma 4.
 >
-> I'm uploading `bad_login.php`, a sample file with intentional security issues. HAL Guardian sends it to Gemma 4 locally and asks for a structured review.
+> The model returns a Markdown review. A lightweight parser extracts a verdict, a summary table, and individual findings. The full Markdown response is always preserved for verification.
 >
-> While the model thinks, you'll see a spinner. In the final edit we'll jump ahead to the results.
+> In this example, we are reviewing `bad_login.php`, a sample file that contains intentional security issues.
 >
 > [Jump cut to results]
 >
-> Here is the verdict: "needs changes." The summary table breaks issues down by category — security, testing, complexity, and style.
+> The verdict is "needs changes." The summary table breaks findings into security, testing, complexity, and style categories. Each finding includes a severity, line reference, description, and recommendation.
 >
-> Below that, each finding has severity, category, line reference, and a recommendation. And if you want a suggested fix, click the button. Gemma 4 will propose a safer version of that code block.
->
-> The full raw Markdown review is always preserved, so you can verify what the model actually said.
+> For medium-and-above findings, the user can request a suggested fix. This sends only the relevant code block back to the model with a repair prompt. As with all generated content, the fix is displayed for review and is not applied automatically.
 
 **On-screen:**
-- Verdict badge
-- Summary table with non-zero counts
-- One "Suggest fix" expanded
-- Raw review (Markdown) expander visible
+- File upload dialog
+- Verdict badge: `needs changes`
+- Summary table
+- One expanded finding
+- Suggested fix code block
+- Raw review expander
 
 ---
 
-## Section 5 — Trust Shield (2:15–2:55)
+## Section 4 — Trust Shield (2:45–3:45)
 
-**Shot:** Trust Shield page. Paste content from `data/sample_inputs/suspicious_email.txt` and run a deep scan.
+**Shot:** Trust Shield page. Paste the suspicious email sample.
 
 **Script:**
-> Next, Trust Shield. This module protects you from prompt injection and hidden payloads.
+> Trust Shield scans prompts, emails, documents, and web pages for signs of manipulation or hidden commands. It combines deterministic pattern matching with an optional deep scan from Gemma 4.
 >
-> I'll paste a suspicious email that contains encoded commands. The quick scan runs instantly and flags command language, meta-instructions, and a Base64 payload.
+> The quick scan detects command language, meta-instructions, and encoded payloads such as Base64, hex, and URL-encoded strings. It decodes the payload automatically.
 >
-> Then I enable the deep scan and ask Gemma 4 for a second opinion. It returns a trust level, confidence score, and recommended action.
+> In this example, the input contains a Base64 string. The quick scan decodes it and flags the underlying destructive command. The trust level is marked suspicious.
 >
-> At the bottom you also get a sanitized version of the input, so you can share a redacted copy safely.
+> The deep scan sends the same input to Gemma 4 for a second opinion on intent, severity, confidence, and recommended action. Because this is a local call, the analysis adds latency but not exposure.
+>
+> At the bottom of the report, the sanitized text panel shows a redacted version of the input that can be shared without leaking sensitive or dangerous content.
 
 **On-screen:**
+- Source set to `untrusted`
 - Quick scan findings
-- Decoded Base64 payload revealed
-- Deep scan result: trust level = suspicious
+- Decoded payload panel
+- Deep scan result
 - Sanitized text panel
 
 ---
 
-## Section 6 — Subagent Console (2:55–3:20)
+## Section 5 — Subagent Console (3:45–4:15)
 
-**Shot:** Subagent Console page. Type `review_dir data/sample_code` and run it.
+**Shot:** Subagent Console page. Run a batch directory review.
 
 **Script:**
-> HAL Guardian isn't just a UI. Every module is exposed as a subagent command.
+> HAL Guardian is not only a user interface. The same modules are exposed as commands through the Subagent Console.
 >
-> Here in the Subagent Console, I can run `review_dir data/sample_code` and batch-review every file in that folder.
+> Available commands include `review`, `review_dir`, `review_code`, `scan`, `health`, and `audit`. Each command returns a standard JSON envelope with the same fields every time: `ok`, `agent`, `command`, `target`, `timestamp`, `duration_ms`, `data`, and `error`.
 >
-> The result is a standard JSON envelope. That means scripts, PowerShell pipelines, or another AI agent can call HAL Guardian as a tool and consume the output predictably.
+> Here, we run `review_dir data/sample_code`. This batch-reviews every file in the directory and returns a JSON array of results.
+>
+> That predictable structure makes it possible to call HAL Guardian from scripts, PowerShell pipelines, or another agent's tool loop.
 
 **On-screen:**
-- Command input
-- JSON result with `ok: true`, `agent: code_guardian`, and list of reviews
+- Command input: `review_dir data/sample_code`
+- JSON output with `ok: true`
+- Expanded single review inside the `data` array
 
 ---
 
-## Section 7 — Model Playground (3:20–3:45)
+## Section 6 — Model Playground (4:15–4:45)
 
-**Shot:** Model Playground page. Load a starter prompt, send it, and save it.
+**Shot:** Model Playground page. Load a starter prompt and save it.
 
 **Script:**
-> The Model Playground is a free-form chat with any local Ollama model.
+> The Model Playground is a free-form chat interface for any local Ollama model. It is useful for testing prompts, comparing model behavior, or developing new instructions for the other modules.
 >
-> You can load a starter prompt, tune temperature, or just experiment. If you find a prompt you want to keep, click Save and it goes into the SQLite-backed prompt library.
+> Users can load starter prompts from a JSON library, adjust the temperature, send messages, and save useful prompts to SQLite. Saved prompts persist across restarts.
 
 **On-screen:**
-- Starter prompt loaded
+- Starter prompt loaded from dropdown
+- Temperature slider
 - Model response
-- Save button clicked, prompt appears in saved list
+- Save action and saved prompt list
 
 ---
 
-## Section 8 — Webfetch in Action (3:45–4:15)
+## Section 7 — Webfetch in Action (4:45–5:15)
 
-**Shot:** Trust Shield → Fetch URL. Use `https://itoversight.ca/Hal_Guardian/injection-test-page.html`. Confirm, then scan.
+**Shot:** Trust Shield → Fetch URL. Use the public demo page.
 
 **Script:**
-> Now let's see webfetch in action.
+> The optional webfetch feature lets Code Guardian and Trust Shield analyze live URLs. Because of the risks involved, it requires explicit enabling, a domain whitelist, and user confirmation before any fetched content reaches the model.
 >
-> In Trust Shield I switch the input mode to Fetch URL and paste our public demo page. The page simulates a malicious email hosted on the web.
+> In this example, we fetch a public test page hosted at `itoversight.ca`. The domain is whitelisted in Settings, and we confirm the fetch before scanning.
 >
-> Because I whitelisted this domain and confirmed the fetch, HAL Guardian downloads the HTML, extracts the text, and passes it to the scan.
->
-> The same workflow works in Code Guardian, so you can review live documentation or bug-report pages as easily as local files.
+> The HTML is stripped to text locally, and Trust Shield scans the extracted content the same way it would scan pasted text. The same workflow applies to Code Guardian, allowing review of live documentation or sample pages.
 
 **On-screen:**
-- URL entered
+- Fetch URL input: `https://itoversight.ca/Hal_Guardian/injection-test-page.html`
 - Fetched successfully message
-- Confirmation checkbox
-- Scan results for the live page
+- Confirmation checkbox checked
+- Scan results
 
 ---
 
-## Section 9 — Audit Engine (4:15–4:35)
+## Section 8 — Audit Engine and Conclusion (5:15–5:40)
 
-**Shot:** Audit Engine page. Scroll through recent actions from the demo.
-
-**Script:**
-> Everything we just did was logged locally.
->
-> The Audit Engine shows every action: what was reviewed, which model was used, how long it took, and whether it succeeded. This makes HAL Guardian accountable and easy to debug.
-
-**On-screen:**
-- List of recent entries
-- JSON details expanded for one entry
-
----
-
-## Section 10 — Outro (4:35–4:50)
-
-**Shot:** Return to Home page, then fade to title card.
+**Shot:** Audit Engine page, then return to Home page.
 
 **Script:**
-> HAL Guardian proves that local open models can deliver real security value without sacrificing privacy.
+> Every action shown in this demo has been logged locally. The Audit Engine displays the JSONL log and mirrors it to SQLite for structured querying.
 >
-> It is built with Google Gemma 4, runs through Ollama, and is open source under Apache 2.0.
+> Each entry records the action type, target, model, duration, success flag, and metadata. This makes the tool inspectable and reproducible.
 >
-> Try it yourself at the GitHub link on screen. Thanks for watching.
+> HAL Guardian is a proof-of-concept, not a production security product. It demonstrates that local open models can provide code review, input classification, and audit logging while keeping data on the device. The source code and demo pages are available at the links shown.
 
 **On-screen:**
-- `github.com/stevevogelaar/HAL-Guardian`
-- `itoversight.ca/Hal_Guardian/`
-- `Apache 2.0`
+- Recent audit entries
+- Expanded JSON for one entry
+- Final links: GitHub repo and live demo pages
 
 ---
 
 ## Recording Notes
 
-- Record in one long session if you prefer. The shotlist above gives the order and what to capture.
-- Use jump cuts over spinner delays. Optional overlay: "Model thinking... 14 seconds" or fast-forward with timecode.
-- Keep mouse movements slow and deliberate for clarity.
-- Speak the script naturally; you can rephrase to sound more human as long as the key points remain.
-- Target final audio length: 3:30–4:30. Visuals can extend slightly during results screens.
+- Record in one long session if preferred; the shotlist provides the capture order.
+- Use jump cuts over Gemma 4 thinking time. Optional overlays: "Model inference..." or "Results in ~12 seconds."
+- Keep mouse movement deliberate and slow.
+- Voice-over can be recorded after video edit; leave short pauses after each UI action.
+- Avoid promotional music, urgency, or superlatives. The tone is technical and explanatory.

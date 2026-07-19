@@ -1,10 +1,12 @@
-# HAL Guardian — Demo Video Shotlist
+# HAL Guardian — Educational Demo Video Shotlist
 
-**Final target length:** 3:30 – 4:50  
-**Resolution:** 1920x1080 (record at 1080p or higher)  
+**Project type:** Local proof-of-concept AI security assistant  
+**Tone:** Educational technical demo  
+**Final target length:** 4:00 – 5:40  
+**Resolution:** 1920x1080 or higher  
 **Frame rate:** 30fps  
-**Audio:** Separate voice-over track, recorded after screen capture  
-**Editing:** DaVinci Resolve; jump cuts allowed over model-thinking time
+**Audio:** Separate voice-over track, recorded after video edit  
+**Editing:** DaVinci Resolve; jump cuts over model inference are expected
 
 ---
 
@@ -12,28 +14,30 @@
 
 | # | Section | Visual | Approx. Final Time | Notes |
 |---|---|---|---|---|
-| 1 | Title card | Static title card with logo, tagline, GitHub link | 0:00–0:08 | Use project font; clean background |
-| 2 | Fade to Home | HAL Guardian UI Home page | 0:08–0:35 | Show model selector and Ollama status; audio introduces safety framing |
-| 3 | Settings page | Webfetch toggle OFF, whitelist empty, warning banner visible | 0:30–0:55 | Add `itoversight.ca` to whitelist on screen |
-| 4 | Code Guardian setup | Mode: Upload a file; select `bad_login.php` | 0:55–1:10 | Keep file dialog visible briefly |
-| 5 | Code Guardian review | Spinner / "Asking gemma4:e2b..." | 1:10–1:18 | Jump cut here; add "Results in ~12s" overlay if desired |
-| 6 | Code Guardian results | Verdict, summary table, findings cards | 1:18–1:45 | Click one finding, then click Suggest fix |
-| 7 | Code Guardian raw review | Expand "Raw review (Markdown)" | 1:45–1:55 | Short pan/scroll to show full response |
-| 8 | Trust Shield setup | Paste suspicious email text, set source to `untrusted` | 1:55–2:08 | Use sample email from repo |
-| 9 | Trust Shield quick scan | Results: trust level, decoded payload, findings | 2:08–2:22 | Highlight Base64 decode |
-| 10 | Trust Shield deep scan | Enable deep scan, run, show model result | 2:22–2:40 | Jump cut over model thinking |
-| 11 | Trust Shield sanitized text | Scroll to bottom, show redacted output | 2:40–2:50 | Pause for readability |
-| 12 | Subagent Console | Type `review_dir data/sample_code`, run | 2:50–3:05 | Show JSON envelope result |
-| 13 | Subagent Console details | Expand one review entry | 3:05–3:15 | Show structured data |
-| 14 | Model Playground setup | Load starter prompt from dropdown | 3:15–3:22 | Show prompt text |
-| 15 | Model Playground chat | Send prompt, show model response | 3:22–3:35 | Jump cut if response is slow |
-| 16 | Model Playground save | Click Save, show prompt in saved list | 3:35–3:45 | Quick action |
-| 17 | Webfetch Trust Shield | Switch to Fetch URL, enter demo URL | 3:45–3:52 | URL: `itoversight.ca/Hal_Guardian/injection-test-page.html` |
-| 18 | Webfetch confirmation | Check "Proceed to scan" checkbox | 3:52–3:58 | Emphasize confirmation step |
-| 19 | Webfetch scan results | Scan results for live page | 3:58–4:10 | Show it detected suspicious content |
-| 20 | Audit Engine | Scroll recent entries | 4:10–4:25 | Expand one JSON entry |
-| 21 | Home page return | Fade back to Home | 4:25–4:35 | Transition to outro |
-| 22 | Outro title card | GitHub + live demo + license | 4:35–4:50 | Hold for final call-to-action |
+| 1 | Title card | Static title card with project name and subtitle | 0:00–0:10 | Neutral typography; no sales language |
+| 2 | Home page | HAL Guardian UI Home page; model status visible | 0:10–0:45 | Let viewer absorb the local-only framing |
+| 3 | Settings page | Webfetch toggle OFF; whitelist and warning visible | 0:45–1:10 | Move slowly; call out security model |
+| 4 | Architecture diagram | Optional static diagram of module layout | 1:10–1:40 | Can be skipped if narration is clear |
+| 5 | Code Guardian setup | Upload `bad_login.php`; select PHP language | 1:40–1:55 | Show file path in dialog |
+| 6 | Code Guardian thinking | Spinner / "Asking gemma4:e2b..." | 1:55–2:02 | Jump cut here |
+| 7 | Code Guardian results | Verdict, summary table, findings cards | 2:02–2:25 | Click one finding |
+| 8 | Code Guardian suggest fix | Expanded suggested fix block | 2:25–2:40 | Show replacement code |
+| 9 | Code Guardian raw review | Expand raw Markdown review | 2:40–2:45 | Brief scroll |
+| 10 | Trust Shield setup | Paste suspicious email; set source `untrusted` | 2:45–3:00 | Use repo sample input |
+| 11 | Trust Shield quick scan | Findings and decoded payload | 3:00–3:15 | Highlight the Base64 decode |
+| 12 | Trust Shield deep scan | Enable deep scan; show model result | 3:15–3:30 | Jump cut here |
+| 13 | Trust Shield sanitized text | Bottom panel with redacted input | 3:30–3:45 | Pause for readability |
+| 14 | Subagent Console setup | Command input `review_dir data/sample_code` | 3:45–3:55 | Show typing |
+| 15 | Subagent Console results | JSON envelope returned | 3:55–4:05 | Jump cut here |
+| 16 | Subagent Console details | Expand one review entry | 4:05–4:15 | Show structured fields |
+| 17 | Model Playground setup | Load starter prompt from dropdown | 4:15–4:25 | Show prompt text |
+| 18 | Model Playground response | Model output visible | 4:25–4:35 | Jump cut if needed |
+| 19 | Model Playground save | Save prompt; show persisted list | 4:35–4:45 | Quick action |
+| 20 | Webfetch setup | Trust Shield → Fetch URL; enter demo URL | 4:45–4:55 | URL: `itoversight.ca/Hal_Guardian/injection-test-page.html` |
+| 21 | Webfetch confirmation | Check proceed checkbox | 4:55–5:00 | Emphasize confirmation gate |
+| 22 | Webfetch scan results | Scan results for fetched page | 5:00–5:15 | Jump cut over fetch + model time |
+| 23 | Audit Engine | Scroll recent entries; expand one JSON object | 5:15–5:30 | Show local logging |
+| 24 | Home return / conclusion | Fade back to Home page | 5:30–5:40 | Final links visible |
 
 ---
 
@@ -41,47 +45,54 @@
 
 | Location | Reason | Suggested Overlay |
 |---|---|---|
-| Code Guardian after clicking review | Model inference time | "Gemma 4 thinking..." or fast-forward 2x |
-| Trust Shield deep scan | Model inference time | "Deep scan in progress..." |
-| Model Playground response | Model inference time | "Response in ~10s" |
-| Subagent Console `review_dir` | Model inference time | "Batch review complete" |
-| Webfetch scan | Combined fetch + model time | "Fetched and scanned" |
+| Code Guardian review | Gemma 4 inference | "Model inference..." or fast-forward |
+| Trust Shield deep scan | Gemma 4 inference | "Deep scan inference..." |
+| Subagent Console `review_dir` | Batch Gemma 4 inference | "Batch review complete" |
+| Model Playground response | Gemma 4 inference | "Response in ~10s" |
+| Webfetch scan | Network fetch + inference | "Fetched and analyzed" |
 
 ---
 
-## DaVinci Resolve Timeline Tips
+## DaVinci Resolve Timeline Structure
 
-- **Track 1:** Screen recording footage
-- **Track 2:** Title cards / lower thirds / callouts
-- **Track 3:** Voice-over audio
-- Use **Fusion** or **Text+** for simple lower thirds (model name, verdict, URLs)
-- Export final as H.264 1080p for web upload
+| Track | Content |
+|---|---|
+| Video 1 | Screen recording footage |
+| Video 2 | Title cards and lower-third callouts |
+| Audio 1 | Voice-over narration |
+| Audio 2 | Optional quiet system/UI clicks (very low) |
+
+- Use **Text+** for lower thirds: model names, verdicts, URLs.
+- Avoid flashy transitions. Simple cuts or short dissolves only.
+- Export as H.264 1080p for web upload.
 
 ---
 
 ## Voice-Over Sync Notes
 
-- Record voice-over after editing the video, or read script while capturing and replace later.
-- Leave 0.3–0.5 second gaps after action clicks so the viewer can follow.
-- When a model result appears, let the visual sit for 2–3 seconds before moving to the next line of narration.
+- Record narration after picture lock for clean audio.
+- Leave 0.3–0.5 second gaps after each click or major UI change.
+- Hold on result screens for 2–3 seconds before moving to the next narration point.
+- Read at a measured pace; avoid upspeak or promotional inflection.
 
 ---
 
-## Required Files for Recording
+## Assets Needed for Recording
 
+- HAL Guardian running with Ollama and `gemma4:e2b` available
 - `data/sample_code/bad_login.php`
 - `data/sample_inputs/suspicious_email.txt`
-- `data/sample_code/` directory (for Subagent Console `review_dir`)
-- Live URLs:
+- `data/sample_code/` directory
+- Live URLs reachable:
   - `https://itoversight.ca/Hal_Guardian/broken-code-page.html`
   - `https://itoversight.ca/Hal_Guardian/injection-test-page.html`
-- Ollama running with `gemma4:e2b` pulled
+- Whitelist pre-configured with `itoversight.ca` if desired
 
 ---
 
 ## Backup Plan
 
-If live model responses are too slow during recording:
-1. Record the interactions as-is.
-2. Use still frames of completed results and dissolve between them in Resolve.
-3. Keep the audio script unchanged — the narration carries the story.
+If model responses are too slow during a single recording session:
+1. Capture all interactions as-is.
+2. In Resolve, hold on the completed-result frames and dissolve between them.
+3. Keep narration continuous; the audio tells the story while the visuals show evidence.
