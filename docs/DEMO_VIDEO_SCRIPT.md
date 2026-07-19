@@ -16,9 +16,9 @@
 **Script:**
 > HAL Guardian is a proof-of-concept, local-first security assistant. It uses Google's Gemma 4 model, served through Ollama, to analyze code and untrusted input without sending data to a cloud API.
 >
-> This demo walks through the tool's architecture, its security model, and each of its five modules: Code Guardian, Trust Shield, Audit Engine, Subagent Console, and Model Playground.
+> This demo walks through the tool's architecture, its security model, and each of its modules: Code Guardian, Trust Shield, Audit Engine, Subagent Console, and Model Playground.
 >
-> Everything shown runs on this machine. The model endpoint is `127.0.0.1:11434`. There are no API keys, no telemetry, and no remote inference by default.
+> Everything shown runs on this machine. The model endpoint is `127.0.0.1:11434`. There are no API keys, no telemetry, and no remote inference by default. Audit entries, saved prompts, webfetch settings, and the whitelist are persisted locally with SQLite and JSONL, so they survive application restarts.
 
 **On-screen:**
 - Title: `HAL Guardian — Local AI Security Assistant Demo`
@@ -34,11 +34,11 @@
 **Script:**
 > The architecture is straightforward. The front end is a Streamlit application. The back end is a set of Python modules that build prompts, call Ollama, parse responses, log actions, and persist settings.
 >
-> `code_guardian.py` handles code review. `trust_shield.py` handles input scanning. `orchestrator.py` exposes every module as a callable command. `audit_engine.py` and `memory.py` handle logging and persistence, using JSONL and SQLite.
+> The main pages map to those modules. Code Guardian handles code review. Trust Shield handles input scanning. The Subagent Console exposes every module as a callable command. Audit Engine shows the local logs. Model Playground is a free-form chat for testing prompts. Settings controls the optional webfetch feature.
 >
-> `document_extract.py` reads local files and image metadata. `webfetch.py` provides optional URL fetching, but it is disabled by default.
+> Persistence is handled through JSONL files and SQLite. Audit entries, saved prompts, webfetch settings, and the whitelist are all stored locally and survive application restarts.
 >
-> The security model is built on a few simple rules. Inference stays local. Audit logs stay local. Model output is never executed automatically. The optional webfetch feature is gated by a whitelist and an explicit confirmation step, so fetched content is never passed to the model without approval.
+> The security model is built on a few simple rules. Inference stays local. Audit logs stay local. Model output is never executed automatically. Webfetch is disabled by default and gated by a whitelist and an explicit confirmation step, so fetched content is never passed to the model without approval.
 
 **On-screen callouts:**
 - `Ollama host: 127.0.0.1:11434`
@@ -64,6 +64,8 @@
 > The verdict is "needs changes." The summary table breaks findings into security, testing, complexity, and style categories. Each finding includes a severity, line reference, description, and recommendation.
 >
 > For medium-and-above findings, the user can request a suggested fix. This sends only the relevant code block back to the model with a repair prompt. As with all generated content, the fix is displayed for review and is not applied automatically.
+>
+> The full review can be exported as JSON or Markdown, so another script or agent can consume the structured result or the original Markdown.
 
 **On-screen:**
 - File upload dialog
@@ -72,6 +74,7 @@
 - One expanded finding
 - Suggested fix code block
 - Raw review expander
+- Export buttons: `Export JSON`, `Export Markdown`
 
 ---
 
@@ -88,7 +91,8 @@
 >
 > The deep scan sends the same input to Gemma 4 for a second opinion on intent, severity, confidence, and recommended action. Because this is a local call, the analysis adds latency but not exposure.
 >
-> At the bottom of the report, the sanitized text panel shows a redacted version of the input that can be shared without leaking sensitive or dangerous content.
+> At the bottom of the report, the sanitized text panel shows a redacted version of the input that can be shared without leaking sensitive or dangerous content.>
+> Each report can also be exported as JSON or Markdown, so the result can be consumed by another script or agent.
 
 **On-screen:**
 - Source set to `untrusted`
@@ -96,6 +100,7 @@
 - Decoded payload panel
 - Deep scan result
 - Sanitized text panel
+- Export buttons: `Export JSON`, `Export Markdown`
 
 ---
 
@@ -126,13 +131,14 @@
 **Script:**
 > The Model Playground is a free-form chat interface for any local Ollama model. It is useful for testing prompts, comparing model behavior, or developing new instructions for the other modules.
 >
-> Users can load starter prompts from a JSON library, adjust the temperature, send messages, and save useful prompts to SQLite. Saved prompts persist across restarts.
+> Users can load starter prompts from a JSON library, adjust the temperature, send messages, and save useful prompts to SQLite. Saved prompts persist across restarts and can be exported as JSON.
 
 **On-screen:**
 - Starter prompt loaded from dropdown
 - Temperature slider
 - Model response
 - Save action and saved prompt list
+- Export button for saved prompts
 
 ---
 
@@ -162,13 +168,14 @@
 **Script:**
 > Every action shown in this demo has been logged locally. The Audit Engine displays the JSONL log and mirrors it to SQLite for structured querying.
 >
-> Each entry records the action type, target, model, duration, success flag, and metadata. This makes the tool inspectable and reproducible.
+> Each entry records the action type, target, model, duration, success flag, and metadata. The full log can be exported as JSON or CSV for external analysis.
 >
 > HAL Guardian is a proof-of-concept, not a production security product. It demonstrates that local open models can provide code review, input classification, and audit logging while keeping data on the device. The source code and demo pages are available at the links shown.
 
 **On-screen:**
 - Recent audit entries
 - Expanded JSON for one entry
+- Export buttons: `Export JSON`, `Export CSV`
 - Final links: GitHub repo and live demo pages
 
 ---

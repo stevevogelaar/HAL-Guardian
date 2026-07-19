@@ -22,22 +22,26 @@
 | 6 | Code Guardian thinking | Spinner / "Asking gemma4:e2b..." | 1:55–2:02 | Jump cut here |
 | 7 | Code Guardian results | Verdict, summary table, findings cards | 2:02–2:25 | Click one finding |
 | 8 | Code Guardian suggest fix | Expanded suggested fix block | 2:25–2:40 | Show replacement code |
-| 9 | Code Guardian raw review | Expand raw Markdown review | 2:40–2:45 | Brief scroll |
+| 9 | Code Guardian export | Hover or click Export JSON / Markdown buttons | 2:40–2:48 | Show both options |
+| 10 | Code Guardian raw review | Expand raw Markdown review | 2:48–2:52 | Brief scroll |
 | 10 | Trust Shield setup | Paste suspicious email; set source `untrusted` | 2:45–3:00 | Use repo sample input |
 | 11 | Trust Shield quick scan | Findings and decoded payload | 3:00–3:15 | Highlight the Base64 decode |
 | 12 | Trust Shield deep scan | Enable deep scan; show model result | 3:15–3:30 | Jump cut here |
-| 13 | Trust Shield sanitized text | Bottom panel with redacted input | 3:30–3:45 | Pause for readability |
+| 13 | Trust Shield export | Hover or click Export JSON / Markdown buttons | 3:30–3:38 | Show both options |
+| 14 | Trust Shield sanitized text | Bottom panel with redacted input | 3:38–3:45 | Pause for readability |
 | 14 | Subagent Console setup | Command input `review_dir data/sample_code` | 3:45–3:55 | Show typing |
 | 15 | Subagent Console results | JSON envelope returned | 3:55–4:05 | Jump cut here |
 | 16 | Subagent Console details | Expand one review entry | 4:05–4:15 | Show structured fields |
 | 17 | Model Playground setup | Load starter prompt from dropdown | 4:15–4:25 | Show prompt text |
 | 18 | Model Playground response | Model output visible | 4:25–4:35 | Jump cut if needed |
-| 19 | Model Playground save | Save prompt; show persisted list | 4:35–4:45 | Quick action |
+| 19 | Model Playground save | Save prompt; show persisted list | 4:35–4:42 | Quick action |
+| 20 | Model Playground export | Hover or click Export prompt library (JSON) button | 4:42–4:48 | Show JSON export option |
 | 20 | Webfetch setup | Trust Shield → Fetch URL; enter demo URL | 4:45–4:55 | URL: `itoversight.ca/Hal_Guardian/injection-test-page.html` |
 | 21 | Webfetch confirmation | Check proceed checkbox | 4:55–5:00 | Emphasize confirmation gate |
 | 22 | Webfetch scan results | Scan results for fetched page | 5:00–5:15 | Jump cut over fetch + model time |
-| 23 | Audit Engine | Scroll recent entries; expand one JSON object | 5:15–5:30 | Show local logging |
-| 24 | Home return / conclusion | Fade back to Home page | 5:30–5:40 | Final links visible |
+| 23 | Audit Engine | Scroll recent entries; expand one JSON object | 5:15–5:28 | Show local logging |
+| 24 | Audit Engine export | Hover or click Export JSON / CSV buttons | 5:28–5:36 | Show both options |
+| 25 | Home return / conclusion | Fade back to Home page | 5:36–5:45 | Final links visible |
 
 ---
 

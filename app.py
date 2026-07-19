@@ -148,6 +148,25 @@ elif page == "Code Guardian":
                                 st.code(fix, language=result["language"])
             with st.expander("Raw review (Markdown)"):
                 st.text(result["raw_response"])
+
+            # Export review result
+            export_col1, export_col2 = st.columns(2)
+            with export_col1:
+                st.download_button(
+                    label="Export JSON",
+                    data=json.dumps(result, indent=2),
+                    file_name=f"code_review_{Path(result.get('file_path', 'result')).name}.json",
+                    mime="application/json",
+                    key="export_json_upload",
+                )
+            with export_col2:
+                st.download_button(
+                    label="Export Markdown",
+                    data=result["raw_response"],
+                    file_name=f"code_review_{Path(result.get('file_path', 'result')).name}.md",
+                    mime="text/markdown",
+                    key="export_md_upload",
+                )
     elif mode == "Paste code":
         code = st.text_area("Paste code to review", height=300)
         language = st.selectbox(
@@ -204,6 +223,25 @@ elif page == "Code Guardian":
                                 st.code(fix, language=result["language"])
             with st.expander("Raw review (Markdown)"):
                 st.text(result["raw_response"])
+
+            # Export review result
+            export_col1, export_col2 = st.columns(2)
+            with export_col1:
+                st.download_button(
+                    label="Export JSON",
+                    data=json.dumps(result, indent=2),
+                    file_name=f"code_review_pasted.json",
+                    mime="application/json",
+                    key="export_json_paste",
+                )
+            with export_col2:
+                st.download_button(
+                    label="Export Markdown",
+                    data=result["raw_response"],
+                    file_name=f"code_review_pasted.md",
+                    mime="text/markdown",
+                    key="export_md_paste",
+                )
     else:
         fetched_url_cg = st.text_input("URL to fetch code from", value="https://itoversight.ca/Hal_Guardian/broken-code-page.html")
         if st.button("Fetch URL") and fetched_url_cg:
@@ -267,6 +305,25 @@ elif page == "Code Guardian":
                                     st.code(fix, language=result["language"])
                 with st.expander("Raw review (Markdown)"):
                     st.text(result["raw_response"])
+
+                # Export review result
+                export_col1, export_col2 = st.columns(2)
+                with export_col1:
+                    st.download_button(
+                        label="Export JSON",
+                        data=json.dumps(result, indent=2),
+                        file_name=f"code_review_fetched.json",
+                        mime="application/json",
+                        key="export_json_fetched",
+                    )
+                with export_col2:
+                    st.download_button(
+                        label="Export Markdown",
+                        data=result["raw_response"],
+                        file_name=f"code_review_fetched.md",
+                        mime="text/markdown",
+                        key="export_md_fetched",
+                    )
 
 elif page == "Trust Shield":
     st.subheader("Trust Shield — Untrusted Input Scanner")
@@ -382,6 +439,54 @@ elif page == "Trust Shield":
         st.markdown("### Sanitized text")
         st.text(report.sanitized_text)
 
+        # Export Trust Shield report
+        report_dict = report.model_dump()
+        export_col1, export_col2 = st.columns(2)
+        with export_col1:
+            st.download_button(
+                label="Export JSON",
+                data=json.dumps(report_dict, indent=2, default=str),
+                file_name="trust_shield_report.json",
+                mime="application/json",
+                key="export_json_ts",
+            )
+        with export_col2:
+            md_lines = [
+                "# Trust Shield Report",
+                f"**Source:** {report.source}",
+                f"**Trust level:** {report.trust_level}",
+                f"**Command language:** {report.contains_command_language}",
+                f"**Meta-instruction framing:** {report.contains_meta_instruction}",
+                f"**Encoded payload:** {report.contains_encoded_payload}",
+                "",
+                "## Decoded payloads",
+            ]
+            for p in report.decoded_payloads:
+                md_lines.append(f"- **{p.type}**: `{p.encoded}` → `{p.decoded}`")
+            md_lines += [
+                "",
+                "## Findings",
+            ]
+            for finding in report.findings:
+                md_lines.append(f"- {finding}")
+            md_lines += [
+                "",
+                f"## Recommendation",
+                report.recommendation,
+                "",
+                "## Sanitized text",
+                "```",
+                report.sanitized_text,
+                "```",
+            ]
+            st.download_button(
+                label="Export Markdown",
+                data="\n".join(md_lines),
+                file_name="trust_shield_report.md",
+                mime="text/markdown",
+                key="export_md_ts",
+            )
+
 elif page == "Audit Engine":
     st.subheader("Audit Engine — Recent Activity")
     st.markdown("""
@@ -400,6 +505,33 @@ elif page == "Audit Engine":
     st.write(f"Showing last {len(records)} entries from `audits/hal-guardian-audit.jsonl`")
     for r in records:
         st.json(r)
+
+    # Export audit log
+    if records:
+        audit_export_col1, audit_export_col2 = st.columns(2)
+        with audit_export_col1:
+            st.download_button(
+                label="Export JSON",
+                data=json.dumps(records, indent=2, default=str),
+                file_name="hal_guardian_audit.json",
+                mime="application/json",
+                key="export_json_audit",
+            )
+        with audit_export_col2:
+            import csv
+            import io
+            if records:
+                output = io.StringIO()
+                writer = csv.DictWriter(output, fieldnames=records[0].keys())
+                writer.writeheader()
+                writer.writerows(records)
+                st.download_button(
+                    label="Export CSV",
+                    data=output.getvalue(),
+                    file_name="hal_guardian_audit.csv",
+                    mime="text/csv",
+                    key="export_csv_audit",
+                )
 
 elif page == "Health":
     st.subheader("Health — HAL Guardian Status")
@@ -712,6 +844,17 @@ elif page == "Model Playground":
                 st.markdown("**Saved prompts (SQLite)**")
                 for p in saved:
                     st.markdown(f"- **{p.get('name')}** ({', '.join(p.get('tags', []))}) — {p.get('explanation', '')[:60]}")
+
+        # Export prompt library
+        exportable = starters + saved
+        if exportable:
+            st.download_button(
+                label="Export prompt library (JSON)",
+                data=json.dumps(exportable, indent=2, default=str),
+                file_name="hal_guardian_prompt_library.json",
+                mime="application/json",
+                key="export_json_prompts",
+            )
 
 elif page == "Settings":
     st.subheader("Settings — Webfetch & Memory")
