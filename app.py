@@ -94,7 +94,7 @@ st.info("Note: switching sidebar modules while a local model is running will can
 
 if page == "Home":
     st.markdown("""
-    **HAL Guardian** is an edge-deployed AI security assistant built for the Gemma 4 hackathon.
+    **HAL Guardian** is a local-first, proof-of-concept AI security assistant.
 
     **What makes it different:** every review, scan, and chat runs locally through Ollama.
     Your source code, prompts, and data never leave the machine unless you choose to export them.
@@ -109,9 +109,33 @@ if page == "Home":
 
     Default model: `gemma4:e2b` via Ollama.
     """)
+
+    st.subheader("System status")
     snap = health_snapshot()
-    st.subheader("Current Environment")
-    st.json(snap)
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if snap["ollama_status"] == "reachable":
+            st.success("Ollama is running")
+        else:
+            st.error("Ollama is not reachable")
+            st.caption("Run `ollama serve` in PowerShell, or use `Start-HALGuardian.bat` to auto-start.")
+    with c2:
+        if snap["models_available"]:
+            st.info(f"**{len(snap['models_available'])}** local model(s) available")
+        else:
+            st.warning("No local models found")
+            st.caption("Run `ollama pull gemma4:e2b` to add one.")
+    with c3:
+        st.write(f"**Total actions:** {snap['total_actions']}")
+        st.write(f"**Successful:** {snap['successful_actions']}")
+        st.write(f"**Failed:** {snap['failed_actions']}")
+
+    if snap["failed_actions"] > 0:
+        with st.expander("Recent failures (for debugging)"):
+            for f in snap["recent_failures"][:3]:
+                st.json(f)
+
+    st.caption("Detailed health data is available on the Health page.")
 
 elif page == "Code Guardian":
     st.subheader("Code Guardian — Local Code Review")
