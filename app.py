@@ -12,6 +12,15 @@ import streamlit as st
 # Ensure module imports work whether run as `streamlit run app.py` or via package
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# Streamlit page-change guard: set a flag when a long-running job starts and
+# warn if the user tries to switch pages before it finishes.
+if "job_running" not in st.session_state:
+    st.session_state.job_running = False
+
+
+def set_job_running(value: bool) -> None:
+    st.session_state.job_running = value
+
 from hal_guardian.config import APP_TITLE, APP_ICON, DATA_DIR, get_available_models, DEFAULT_MODEL
 from hal_guardian.code_guardian import review_file, review_code, suggest_fix_for_finding
 from hal_guardian.trust_shield import scan_input
@@ -72,11 +81,22 @@ _selected_default = DEFAULT_MODEL if DEFAULT_MODEL in _available_models else (_a
 # Sidebar navigation
 with st.sidebar:
     st.title(f"{APP_ICON} {APP_TITLE}")
-    page = st.radio(
+    selected_page = st.radio(
         "Choose a module",
         ["Home", "Code Guardian", "Trust Shield", "Model Playground", "Subagent Console", "Audit Engine", "Health", "Settings", "Manual"],
     )
     st.divider()
+
+    # Page-change guard
+    if st.session_state.job_running and selected_page != st.session_state.get("current_page"):
+        st.warning("Changing modules cancels the running job. Click Restart Server if you need to stop and switch.")
+        # Keep the previous page selected in this render; user must restart to switch safely
+        page = st.session_state.get("current_page", selected_page)
+    else:
+        page = selected_page
+
+    # Track current page for the guard
+    st.session_state.current_page = page
 
     st.markdown("#### Active model")
     global_model = st.selectbox(
@@ -95,7 +115,6 @@ with st.sidebar:
 
 st.title(f"{APP_ICON} {APP_TITLE}")
 st.caption(f"Runs locally on {global_model} via Ollama. Nothing leaves your machine unless you choose to export it.")
-st.info("Note: switching sidebar modules while a local model is running will cancel the current operation. Wait for results before changing tabs.", icon="ℹ️")
 
 if page == "Home":
     st.markdown("""
@@ -813,51 +832,7 @@ elif page == "Model Playground":
     if "mp_temperature" not in st.session_state:
         st.session_state.mp_temperature = 0.2
 
-    # Controls row
-    col_model, col_actions = st.columns([2, 3])
-    with col_model:
-        model = st.selectbox("Model", _available_models, index=_available_models.index(global_model) if global_model in _available_models else 0, key="mp_model")
-    with col_actions:
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            if st.button("Random prompt"):
-                all_prompts = starters + saved
-                if all_prompts:
-                    pick = random.choice(all_prompts)
-                    st.session_state.mp_system = pick.get("system", "")
-                    st.session_state.mp_prompt = pick.get("prompt", "")
-                    st.session_state.mp_temperature = pick.get("temperature", 0.2)
-                    st.rerun()
-                else:
-                    st.warning("No prompt library found.")
-        with c2:
-            chosen = st.selectbox("Load example", ["(none)"] + [p.get("name", "untitled") for p in starters + saved])
-            if chosen != "(none)":
-                for p in starters + saved:
-                    if p.get("name") == chosen:
-                        st.session_state.mp_system = p.get("system", "")
-                        st.session_state.mp_prompt = p.get("prompt", "")
-                        st.session_state.mp_temperature = p.get("temperature", 0.2)
-                        break
-        with c3:
-            with st.popover("Save prompt"):
-                save_name = st.text_input("Name", value="My prompt")
-                save_tags = st.text_input("Tags (comma separated)", value="general")
-                save_explanation = st.text_area("Why this prompt works / when to use it", height=80)
-                if st.button("Confirm save"):
-                    tags = [t.strip() for t in save_tags.split(",") if t.strip()]
-                    save_db_prompt(
-                        name=save_name,
-                        tags=tags,
-                        explanation=save_explanation,
-                        model=st.session_state.mp_model,
-                        temperature=st.session_state.mp_temperature,
-                        system_prompt=st.session_state.mp_system,
-                        user_prompt=st.session_state.mp_prompt,
-                    )
-                    st.success(f"Saved '{save_name}' to SQLite library")
-
-    # Library viewer (collapsed by default, above input)
+    # Prompt library at the top, collapsed by default
     with st.expander("Prompt library", expanded=False):
         if not starters and not saved:
             st.write("No prompts saved yet.")
@@ -881,27 +856,69 @@ elif page == "Model Playground":
                 key="export_json_prompts",
             )
 
-    # Model comparator section
     st.divider()
+
+    # Model comparator controls above active model
     enable_compare = st.checkbox("Enable model comparator", key="mp_enable_compare")
     compare_model = None
     judge_model = None
     if enable_compare:
-        other_models = [m for m in _available_models if m != model]
+        other_models = [m for m in _available_models if m != st.session_state.mp_model]
         if not other_models:
             st.warning("Only one model is available. Pull another model in Ollama to use the comparator.")
         else:
-            c1, c2 = st.columns(2)
-            with c1:
-                compare_model = st.selectbox("Comparator model", other_models, key="mp_compare_model")
-            with c2:
-                judge_model = st.selectbox(
-                    "AI judge model",
-                    _available_models,
-                    index=_available_models.index(model) if model in _available_models else 0,
-                    key="mp_judge_model",
-                    help="Model used to summarize the differences between the two responses. Defaults to the active model.",
+            compare_model = st.selectbox("Comparator model", other_models, key="mp_compare_model")
+            judge_model = st.selectbox(
+                "AI judge model",
+                _available_models,
+                index=_available_models.index(st.session_state.mp_model) if st.session_state.mp_model in _available_models else 0,
+                key="mp_judge_model",
+                help="Model used to summarize the differences between the two responses. Defaults to the active model.",
+            )
+
+    # Active model selection
+    model = st.selectbox("Active model", _available_models, index=_available_models.index(global_model) if global_model in _available_models else 0, key="mp_model")
+    # The selectbox already writes to st.session_state.mp_model via its key
+
+    # Action row for prompt controls
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("Random prompt"):
+            all_prompts = starters + saved
+            if all_prompts:
+                pick = random.choice(all_prompts)
+                st.session_state.mp_system = pick.get("system", "")
+                st.session_state.mp_prompt = pick.get("prompt", "")
+                st.session_state.mp_temperature = pick.get("temperature", 0.2)
+                st.rerun()
+            else:
+                st.warning("No prompt library found.")
+    with c2:
+        chosen = st.selectbox("Load example", ["(none)"] + [p.get("name", "untitled") for p in starters + saved])
+        if chosen != "(none)":
+            for p in starters + saved:
+                if p.get("name") == chosen:
+                    st.session_state.mp_system = p.get("system", "")
+                    st.session_state.mp_prompt = p.get("prompt", "")
+                    st.session_state.mp_temperature = p.get("temperature", 0.2)
+                    break
+    with c3:
+        with st.popover("Save prompt"):
+            save_name = st.text_input("Name", value="My prompt")
+            save_tags = st.text_input("Tags (comma separated)", value="general")
+            save_explanation = st.text_area("Why this prompt works / when to use it", height=80)
+            if st.button("Confirm save"):
+                tags = [t.strip() for t in save_tags.split(",") if t.strip()]
+                save_db_prompt(
+                    name=save_name,
+                    tags=tags,
+                    explanation=save_explanation,
+                    model=st.session_state.mp_model,
+                    temperature=st.session_state.mp_temperature,
+                    system_prompt=st.session_state.mp_system,
+                    user_prompt=st.session_state.mp_prompt,
                 )
+                st.success(f"Saved '{save_name}' to SQLite library")
 
     system = st.text_area("System prompt (optional)", height=80, key="mp_system")
     prompt = st.text_area("User prompt", height=150, key="mp_prompt")
