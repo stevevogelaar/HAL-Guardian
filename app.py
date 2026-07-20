@@ -31,9 +31,14 @@ from hal_guardian.memory import (
     add_blacklist,
     remove_blacklist,
     seed_defaults,
+    save_comparison,
+    list_comparisons,
+    get_comparison,
+    update_comparison_ai_summary,
 )
 from hal_guardian.audit_engine import health_snapshot, read_audit_tail
 from hal_guardian.orchestrator import run as run_orchestrator, help_text, list_commands
+from hal_guardian.model_comparator import compare_prompt, summarize_comparison
 
 st.set_page_config(
     page_title=APP_TITLE,
@@ -69,7 +74,7 @@ with st.sidebar:
     st.title(f"{APP_ICON} {APP_TITLE}")
     page = st.radio(
         "Choose a module",
-        ["Home", "Code Guardian", "Trust Shield", "Audit Engine", "Health", "Subagent Console", "Model Playground", "Settings", "Manual"],
+        ["Home", "Code Guardian", "Trust Shield", "Model Playground", "Subagent Console", "Audit Engine", "Health", "Settings", "Manual"],
     )
     st.divider()
 
@@ -852,35 +857,8 @@ elif page == "Model Playground":
                     )
                     st.success(f"Saved '{save_name}' to SQLite library")
 
-    system = st.text_area("System prompt (optional)", height=80, key="mp_system")
-    prompt = st.text_area("User prompt", height=150, key="mp_prompt")
-    temperature = st.slider("Temperature", 0.0, 1.0, key="mp_temperature")
-
-    if st.button("Send") and prompt:
-        import ollama
-        with st.spinner(f"Asking {model}..."):
-            try:
-                client = ollama.Client(host="http://127.0.0.1:11434")
-                messages = []
-                if system:
-                    messages.append({"role": "system", "content": system})
-                messages.append({"role": "user", "content": prompt})
-                response = client.chat(
-                    model=model,
-                    messages=messages,
-                    options={"temperature": temperature, "num_ctx": 4096},
-                )
-                reply = response["message"]["content"]
-                st.markdown("### Response")
-                st.markdown(reply)
-                st.divider()
-                st.markdown("### Raw response")
-                st.text(reply)
-            except Exception as e:
-                st.error(f"Model error: {e}")
-
-    # Library viewer
-    with st.expander("Prompt library"):
+    # Library viewer (collapsed by default, above input)
+    with st.expander("Prompt library", expanded=False):
         if not starters and not saved:
             st.write("No prompts saved yet.")
         else:
@@ -902,6 +880,198 @@ elif page == "Model Playground":
                 mime="application/json",
                 key="export_json_prompts",
             )
+
+    # Model comparator section
+    st.divider()
+    enable_compare = st.checkbox("Enable model comparator", key="mp_enable_compare")
+    compare_model = None
+    judge_model = None
+    if enable_compare:
+        other_models = [m for m in _available_models if m != model]
+        if not other_models:
+            st.warning("Only one model is available. Pull another model in Ollama to use the comparator.")
+        else:
+            c1, c2 = st.columns(2)
+            with c1:
+                compare_model = st.selectbox("Comparator model", other_models, key="mp_compare_model")
+            with c2:
+                judge_model = st.selectbox(
+                    "AI judge model",
+                    _available_models,
+                    index=_available_models.index(model) if model in _available_models else 0,
+                    key="mp_judge_model",
+                    help="Model used to summarize the differences between the two responses. Defaults to the active model.",
+                )
+
+    system = st.text_area("System prompt (optional)", height=80, key="mp_system")
+    prompt = st.text_area("User prompt", height=150, key="mp_prompt")
+    temperature = st.slider("Temperature", 0.0, 1.0, key="mp_temperature")
+
+    comparison_id = None
+    last_comparison = None
+
+    if st.button("Send") and prompt:
+        import ollama
+        if enable_compare and compare_model:
+            with st.spinner(f"Comparing {model} vs {compare_model}..."):
+                try:
+                    cmp = compare_prompt(
+                        active_model=model,
+                        compare_model=compare_model,
+                        system=system,
+                        prompt=prompt,
+                        temperature=temperature,
+                    )
+                    if not cmp.get("ok"):
+                        st.error(f"Comparison failed: {cmp.get('error')}")
+                    else:
+                        # Persist to SQLite
+                        comparison_id = save_comparison(
+                            prompt=prompt,
+                            system_prompt=system,
+                            temperature=temperature,
+                            active_model=cmp["active_model"]["model"],
+                            active_response=cmp["active_model"]["response"],
+                            active_latency_ms=cmp["active_model"]["latency_ms"],
+                            active_chars=cmp["active_model"]["chars"],
+                            active_words=cmp["active_model"]["words"],
+                            active_lines=cmp["active_model"]["lines"],
+                            active_tokens_per_sec=cmp["active_model"]["tokens_per_sec"],
+                            compare_model=cmp["compare_model"]["model"],
+                            compare_response=cmp["compare_model"]["response"],
+                            compare_latency_ms=cmp["compare_model"]["latency_ms"],
+                            compare_chars=cmp["compare_model"]["chars"],
+                            compare_words=cmp["compare_model"]["words"],
+                            compare_lines=cmp["compare_model"]["lines"],
+                            compare_tokens_per_sec=cmp["compare_model"]["tokens_per_sec"],
+                            similarity=cmp["similarity"],
+                        )
+                        last_comparison = cmp
+                        st.session_state["last_comparison_id"] = comparison_id
+                        st.success(f"Comparison saved (id {comparison_id}) — similarity {cmp['similarity_pct']}")
+                        # Side-by-side metrics
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            st.markdown(f"### {model}")
+                            st.metric("Latency", f"{cmp['active_model']['latency_ms']} ms")
+                            st.metric("Chars", cmp['active_model']['chars'])
+                            st.metric("Words", cmp['active_model']['words'])
+                            st.metric("Tokens/sec", cmp['active_model']['tokens_per_sec'])
+                            with st.expander("Response"):
+                                st.markdown(cmp['active_model']['response'])
+                        with c2:
+                            st.markdown(f"### {compare_model}")
+                            st.metric("Latency", f"{cmp['compare_model']['latency_ms']} ms")
+                            st.metric("Chars", cmp['compare_model']['chars'])
+                            st.metric("Words", cmp['compare_model']['words'])
+                            st.metric("Tokens/sec", cmp['compare_model']['tokens_per_sec'])
+                            with st.expander("Response"):
+                                st.markdown(cmp['compare_model']['response'])
+                        st.markdown(f"**Similarity:** {cmp['similarity_pct']}")
+                        # Export comparison
+                        st.download_button(
+                            label="Export comparison (JSON)",
+                            data=json.dumps(cmp, indent=2, default=str),
+                            file_name=f"comparison_{cmp['active_model']['model']}_vs_{cmp['compare_model']['model']}.json",
+                            mime="application/json",
+                            key="export_comparison_json",
+                        )
+                except Exception as e:
+                    st.error(f"Comparison error: {e}")
+        else:
+            with st.spinner(f"Asking {model}..."):
+                try:
+                    client = ollama.Client(host="http://127.0.0.1:11434")
+                    messages = []
+                    if system:
+                        messages.append({"role": "system", "content": system})
+                    messages.append({"role": "user", "content": prompt})
+                    response = client.chat(
+                        model=model,
+                        messages=messages,
+                        options={"temperature": temperature, "num_ctx": 4096},
+                    )
+                    reply = response["message"]["content"]
+                    st.markdown("### Response")
+                    st.markdown(reply)
+                    st.divider()
+                    st.markdown("### Raw response")
+                    st.text(reply)
+                except Exception as e:
+                    st.error(f"Model error: {e}")
+
+    # AI summary for the most recent comparison (in-session or recalled)
+    if last_comparison:
+        judge = judge_model or model
+        if st.button("AI compare"):
+            with st.spinner(f"Asking {judge} to summarize..."):
+                try:
+                    summary = summarize_comparison(
+                        judge_model=judge,
+                        prompt=prompt,
+                        response_a=last_comparison["active_model"],
+                        response_b=last_comparison["compare_model"],
+                    )
+                    if summary.get("ok"):
+                        st.markdown("### AI comparison summary")
+                        st.markdown(summary["summary"])
+                        if comparison_id:
+                            update_comparison_ai_summary(
+                                row_id=comparison_id,
+                                ai_summary=summary["summary"],
+                                ai_judge_model=judge,
+                                ai_latency_ms=summary["latency_ms"],
+                            )
+                    else:
+                        st.error(f"AI summary failed: {summary.get('error')}")
+                except Exception as e:
+                    st.error(f"AI compare error: {e}")
+
+    # Comparison history / recall
+    with st.expander("Comparison history"):
+        history = list_comparisons(limit=20)
+        if not history:
+            st.write("No comparisons yet.")
+        else:
+            for row in history:
+                title = f"{row['timestamp'][:19]} — {row['active_model']} vs {row['compare_model']} (sim {row['similarity']:.2f})"
+                with st.expander(title):
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.markdown(f"**{row['active_model']}** — {row['active_latency_ms']} ms, {row['active_chars']} chars")
+                        st.markdown(row['active_response'][:500] + ("..." if len(row['active_response']) > 500 else ""))
+                    with c2:
+                        st.markdown(f"**{row['compare_model']}** — {row['compare_latency_ms']} ms, {row['compare_chars']} chars")
+                        st.markdown(row['compare_response'][:500] + ("..." if len(row['compare_response']) > 500 else ""))
+                    if row['ai_summary']:
+                        st.markdown("### AI summary")
+                        st.markdown(row['ai_summary'])
+                    else:
+                        if st.button("AI compare", key=f"ai_compare_history_{row['id']}"):
+                            row_data = get_comparison(row['id'])
+                            if row_data:
+                                judge = judge_model or row_data['active_model']
+                                with st.spinner(f"Asking {judge}..."):
+                                    try:
+                                        summary = summarize_comparison(
+                                            judge_model=judge,
+                                            prompt=row_data['prompt'],
+                                            response_a={"model": row_data['active_model'], "response": row_data['active_response']},
+                                            response_b={"model": row_data['compare_model'], "response": row_data['compare_response']},
+                                        )
+                                        if summary.get("ok"):
+                                            update_comparison_ai_summary(
+                                                row_id=row['id'],
+                                                ai_summary=summary["summary"],
+                                                ai_judge_model=judge,
+                                                ai_latency_ms=summary["latency_ms"],
+                                            )
+                                            st.markdown("### AI summary")
+                                            st.markdown(summary["summary"])
+                                        else:
+                                            st.error(f"AI summary failed: {summary.get('error')}")
+                                    except Exception as e:
+                                        st.error(f"AI compare error: {e}")
 
 elif page == "Settings":
     st.subheader("Settings — Webfetch & Memory")
@@ -1035,6 +1205,8 @@ elif page == "Manual":
 
     ### Model Playground
     Chat directly with any local Ollama model. Load examples, generate random prompts, tune temperature, and save useful prompts to the project library.
+
+    Enable the **model comparator** checkbox to run the same prompt through two models side by side with latency, length, and similarity metrics, then ask a judge model to summarize the differences. Saved comparisons appear in the **Comparison history** panel.
 
     ---
 

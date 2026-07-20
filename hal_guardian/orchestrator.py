@@ -35,6 +35,7 @@ from .code_guardian import review_file, review_code
 from .trust_shield import scan_input
 from .audit_engine import health_snapshot, read_audit_tail
 from .config import DEFAULT_MODEL, DATA_DIR
+from .model_comparator import compare_prompt, summarize_comparison
 
 
 def _now() -> str:
@@ -80,6 +81,41 @@ def _health(**kwargs) -> Dict[str, Any]:
 
 def _audit(limit: int = 50, **kwargs) -> Dict[str, Any]:
     return {"ok": True, "data": read_audit_tail(limit=limit)}
+
+
+def _compare_models(
+    active_model: str,
+    compare_model: str,
+    target: str,
+    system: str = "",
+    temperature: float = 0.2,
+    deep_model: str = "",
+    **kwargs,
+) -> Dict[str, Any]:
+    if not compare_model:
+        return {"ok": False, "error": "compare_model is required"}
+    result = compare_prompt(
+        active_model=active_model,
+        compare_model=compare_model,
+        system=system,
+        prompt=target,
+        temperature=temperature,
+    )
+    if not result.get("ok"):
+        return result
+    summary = None
+    judge = deep_model or active_model
+    if judge:
+        summary = summarize_comparison(
+            judge_model=judge,
+            prompt=target,
+            response_a=result["active_model"],
+            response_b=result["compare_model"],
+            temperature=temperature,
+        )
+    data = dict(result)
+    data["ai_summary"] = summary
+    return {"ok": True, "data": data}
 
 
 def _review_directory(target: str, model: str, recursive: bool = False, **kwargs) -> Dict[str, Any]:
@@ -170,6 +206,19 @@ _COMMANDS = {
         "description": "Return recent audit log entries.",
         "args": [
             {"name": "limit", "required": False, "default": 50, "help": "Number of recent entries to return"},
+        ],
+    },
+    "compare": {
+        "agent": "model_comparator",
+        "handler": _compare_models,
+        "description": "Compare active_model vs compare_model on the same prompt and optionally produce an AI summary.",
+        "args": [
+            {"name": "target", "required": True, "help": "Prompt to send to both models"},
+            {"name": "active_model", "required": True, "help": "First model / active model"},
+            {"name": "compare_model", "required": True, "help": "Second model to compare against"},
+            {"name": "system", "required": False, "default": "", "help": "Optional system prompt"},
+            {"name": "temperature", "required": False, "default": 0.2, "help": "Sampling temperature"},
+            {"name": "deep_model", "required": False, "default": "", "help": "Optional judge model for AI summary (defaults to active_model)"},
         ],
     },
 }

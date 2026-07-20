@@ -9,7 +9,7 @@
 
 ## Summary
 
-HAL Guardian is a privacy-first security assistant that runs **Google Gemma 4 through Ollama** entirely on the user's own machine. It reviews code, scans untrusted input for prompt injection and hidden payloads, logs every action to a local SQLite-backed store, and exposes every module as an agent-callable command. The project proves that a local open model can deliver real, practical security value without sending proprietary code or prompts to a cloud API.
+HAL Guardian is a privacy-first security assistant that runs **Google Gemma 4 through Ollama** entirely on the user's own machine. It reviews code, scans untrusted input for prompt injection and hidden payloads, logs every action to a local SQLite-backed store, and exposes every module as an agent-callable command. The project proves that a local open model can deliver real, practical security value without sending proprietary code or prompts to a cloud API. It is a proof-of-concept desktop tool, not enterprise-grade isolation software.
 
 ---
 
@@ -28,6 +28,10 @@ HAL Guardian combines five layers into one desktop application:
 3. **Audit Engine** records every action to JSONL and SQLite with timestamps, targets, models, and metadata.
 4. **Subagent Orchestrator** exposes every module as a command (`review`, `review_dir`, `review_code`, `scan`, `health`, `audit`) with a standard JSON envelope, so scripts or other agents can call HAL Guardian as a tool.
 5. **Model Playground** lets users chat with any local Ollama model and save useful prompts.
+
+### Why Edge / On-Device?
+
+Running locally matters for three reasons. **Privacy:** proprietary source code and sensitive prompts never leave the machine. **Cost and latency:** no per-token cloud bills and no network round-trips. **Compliance and control:** regulated environments and incident responders can review code without vendor lock-in or external data-processing agreements. Gemma 4's Apache 2.0 license and flexible Ollama quantization make this practical on consumer hardware.
 
 Document and image extraction, URL fetching, model inference, and logging all happen locally by default. Optional webfetch is opt-in, whitelist-controlled, and confirm-before-send.
 
@@ -60,7 +64,7 @@ Gemma 4 is the reasoning engine behind every AI-driven feature:
 - **Model Playground** lets users chat directly with any pulled Ollama model, including quantized variants.
 - **Suggest Fix** asks Gemma 4 to produce a safe code replacement for a specific finding.
 
-We use Gemma 4 because it is Apache 2.0 licensed, runs locally through Ollama, supports flexible quantization, and produces structured security analysis without a cloud dependency.
+We use Gemma 4 because it is Apache 2.0 licensed, runs locally through Ollama, supports flexible quantization, and produces structured security analysis without a cloud dependency. For hackathon demos we default to `gemma4:e2b` (2B) for speed, while users can choose larger quantizations for deeper analysis.
 
 ---
 
@@ -116,5 +120,6 @@ Or double-click `Start-HALGuardian.bat`.
 - Extend the parser for more model output styles
 - Add a `reverify` subagent that re-checks flagged findings
 - Package HAL Guardian as an installable Python wheel
+- Integrate Google Cloud's Guardian API for online content moderation in addition to the local pipeline (hackathon bonus)
 
 HAL Guardian demonstrates that local open models can serve as a strong foundational asset for privacy-preserving security tooling.

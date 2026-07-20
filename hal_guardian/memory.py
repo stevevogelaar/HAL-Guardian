@@ -81,6 +81,36 @@ def init_db() -> None:
                 added_at TEXT NOT NULL,
                 reason TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS model_comparisons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                system_prompt TEXT,
+                temperature REAL,
+                active_model TEXT NOT NULL,
+                active_response TEXT,
+                active_latency_ms INTEGER,
+                active_chars INTEGER,
+                active_words INTEGER,
+                active_lines INTEGER,
+                active_tokens_per_sec REAL,
+                compare_model TEXT NOT NULL,
+                compare_response TEXT,
+                compare_latency_ms INTEGER,
+                compare_chars INTEGER,
+                compare_words INTEGER,
+                compare_lines INTEGER,
+                compare_tokens_per_sec REAL,
+                similarity REAL,
+                ai_summary TEXT,
+                ai_judge_model TEXT,
+                ai_latency_ms INTEGER
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_comparisons_timestamp ON model_comparisons(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_comparisons_active_model ON model_comparisons(active_model);
+            CREATE INDEX IF NOT EXISTS idx_comparisons_compare_model ON model_comparisons(compare_model);
             """
         )
         conn.commit()
@@ -305,6 +335,124 @@ def remove_blacklist(domain: str) -> None:
     conn = _ensure_db()
     try:
         conn.execute("DELETE FROM webfetch_blacklist WHERE domain = ?", (domain.strip().lower(),))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def save_comparison(
+    prompt: str,
+    system_prompt: str,
+    temperature: float,
+    active_model: str,
+    active_response: str,
+    active_latency_ms: int,
+    active_chars: int,
+    active_words: int,
+    active_lines: int,
+    active_tokens_per_sec: float,
+    compare_model: str,
+    compare_response: str,
+    compare_latency_ms: int,
+    compare_chars: int,
+    compare_words: int,
+    compare_lines: int,
+    compare_tokens_per_sec: float,
+    similarity: float,
+    ai_summary: str = "",
+    ai_judge_model: str = "",
+    ai_latency_ms: int = 0,
+) -> int:
+    """Persist a model comparison to SQLite and return the new row id."""
+    init_db()
+    conn = _ensure_db()
+    try:
+        cur = conn.execute(
+            """
+            INSERT INTO model_comparisons
+            (timestamp, prompt, system_prompt, temperature, active_model, active_response,
+             active_latency_ms, active_chars, active_words, active_lines, active_tokens_per_sec,
+             compare_model, compare_response, compare_latency_ms, compare_chars, compare_words,
+             compare_lines, compare_tokens_per_sec, similarity, ai_summary, ai_judge_model,
+             ai_latency_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                _now_iso(),
+                prompt,
+                system_prompt,
+                temperature,
+                active_model,
+                active_response,
+                active_latency_ms,
+                active_chars,
+                active_words,
+                active_lines,
+                active_tokens_per_sec,
+                compare_model,
+                compare_response,
+                compare_latency_ms,
+                compare_chars,
+                compare_words,
+                compare_lines,
+                compare_tokens_per_sec,
+                similarity,
+                ai_summary,
+                ai_judge_model,
+                ai_latency_ms,
+            ),
+        )
+        conn.commit()
+        return cur.lastrowid
+    finally:
+        conn.close()
+
+
+def list_comparisons(limit: int = 50) -> List[Dict[str, Any]]:
+    """Return recent model comparisons, newest first."""
+    init_db()
+    conn = _ensure_db()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM model_comparisons ORDER BY timestamp DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def get_comparison(row_id: int) -> Optional[Dict[str, Any]]:
+    """Return a single comparison by id."""
+    init_db()
+    conn = _ensure_db()
+    try:
+        row = conn.execute(
+            "SELECT * FROM model_comparisons WHERE id = ?", (row_id,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def update_comparison_ai_summary(
+    row_id: int,
+    ai_summary: str,
+    ai_judge_model: str,
+    ai_latency_ms: int,
+) -> None:
+    """Update an existing comparison with an AI-generated summary."""
+    init_db()
+    conn = _ensure_db()
+    try:
+        conn.execute(
+            """
+            UPDATE model_comparisons
+            SET ai_summary = ?, ai_judge_model = ?, ai_latency_ms = ?
+            WHERE id = ?
+            """,
+            (ai_summary, ai_judge_model, ai_latency_ms, row_id),
+        )
         conn.commit()
     finally:
         conn.close()

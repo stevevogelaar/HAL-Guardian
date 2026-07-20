@@ -37,6 +37,7 @@ HAL Guardian is a single-desktop application with a Streamlit front end and a mo
 - Stores audit log entries.
 - Persists saved prompts and the Model Playground prompt library.
 - Persists webfetch settings, whitelist, and blacklist.
+- Persists model comparison results for recall in the Model Playground.
 
 ### `webfetch.py` — Safe URL Fetcher
 - Disabled by default; can be toggled in Settings.
@@ -56,6 +57,12 @@ Pydantic models for:
 - `AuditEntry`
 - `HealthSnapshot`
 - `SavedPrompt`
+
+### `model_comparator.py` — Model Comparator
+- Runs the same prompt through the active model and a second local model.
+- Records latency, response length, estimated tokens/sec, and similarity score.
+- Optionally asks a judge model to summarize the differences.
+- Results are persisted to SQLite and shown in the Model Playground UI.
 
 ### `config.py` — Configuration
 - Default model: `gemma4:e2b`
@@ -81,7 +88,9 @@ Streamlit UI (app.py)
     │
     ├──▶ webfetch.py ──▶ fetched text (if enabled + whitelisted + confirmed)
     │
-    └──▶ audit_engine.py + memory.py ──▶ JSONL + SQLite logs + HealthSnapshot
+    ├──▶ audit_engine.py + memory.py ──▶ JSONL + SQLite logs + HealthSnapshot
+    │
+    └──▶ model_comparator.py ──▶ side-by-side model metrics + AI judge summary
 ```
 
 ---

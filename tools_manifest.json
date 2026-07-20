@@ -126,6 +126,52 @@
       ]
     },
     {
+      "name": "compare",
+      "description": "Compare the active model and a second local model on the same prompt, with optional AI judge summary.",
+      "agent": "model_comparator",
+      "parameters": [
+        {
+          "name": "target",
+          "type": "string",
+          "required": true,
+          "description": "Prompt to send to both models."
+        },
+        {
+          "name": "active_model",
+          "type": "string",
+          "required": true,
+          "description": "First / active model. Example: gemma4:e2b"
+        },
+        {
+          "name": "compare_model",
+          "type": "string",
+          "required": true,
+          "description": "Second model to compare against. Example: qwen2.5"
+        },
+        {
+          "name": "system",
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Optional system prompt."
+        },
+        {
+          "name": "temperature",
+          "type": "number",
+          "required": false,
+          "default": 0.2,
+          "description": "Sampling temperature."
+        },
+        {
+          "name": "deep_model",
+          "type": "string",
+          "required": false,
+          "default": "",
+          "description": "Optional judge model for the AI summary. Defaults to active_model."
+        }
+      ]
+    },
+    {
       "name": "health",
       "description": "Return the local environment status: Ollama reachability, available models, and recent action counts.",
       "agent": "audit_engine",
