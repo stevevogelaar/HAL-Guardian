@@ -26,8 +26,8 @@ HAL Guardian combines five layers into one desktop application:
 1. **Code Guardian** reviews files, pasted code, or fetched web pages for security, testing, complexity, and style issues, returning a verdict and structured findings.
 2. **Trust Shield** scans prompts, emails, documents, and web pages for prompt-injection language, destructive commands, and encoded payloads, with an optional Gemma 4 deep scan.
 3. **Audit Engine** records every action to JSONL and SQLite with timestamps, targets, models, and metadata.
-4. **Subagent Orchestrator** exposes every module as a command (`review`, `review_dir`, `review_code`, `scan`, `health`, `audit`) with a standard JSON envelope, so scripts or other agents can call HAL Guardian as a tool.
-5. **Model Playground** lets users chat with any local Ollama model and save useful prompts.
+4. **Subagent Orchestrator** exposes every module as a command (`review`, `review_dir`, `review_code`, `scan`, `health`, `audit`, `compare`) with a standard JSON envelope, so scripts or other agents can call HAL Guardian as a tool.
+5. **Model Playground** lets users chat with any local Ollama model and save useful prompts. Enable the comparator to run the same prompt through two models, view side-by-side metrics (latency, length, similarity), and ask a judge model to summarize the differences.
 
 ### Why Edge / On-Device?
 
