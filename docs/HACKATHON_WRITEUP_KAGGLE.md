@@ -12,11 +12,11 @@ HAL Guardian combines five integrated modules into one desktop application. Code
 
 Trust Shield performs deterministic scanning plus an optional Gemma 4 deep analysis on prompts, emails, documents, and web pages to detect prompt injection language, destructive commands, and encoded payloads. It returns a trust level, confidence score, severity rating, and recommended action for each scanned input.
 
-The Subagent Orchestrator exposes every capability as a callable command — review, review_dir, review_code, scan, health, and audit — with a standard JSON envelope. This means any other AI agent, automation script, or CI/CD pipeline can call HAL Guardian as a tool, making the entire ecosystem safer without exposing code to the cloud.
+The Subagent Orchestrator exposes every capability as a callable command — review, review_dir, review_code, scan, health, audit, and compare — with a standard JSON envelope. This means any other AI agent, automation script, or CI/CD pipeline can call HAL Guardian as a tool, making the entire ecosystem safer without exposing code to the cloud.
 
 The Audit Engine records every action to both JSONL and SQLite with timestamps, targets, models used, and metadata. This creates a permanent, searchable log of every security decision the tool has ever made.
 
-The Model Playground lets users chat directly with any pulled Ollama model, including quantized Gemma 4 variants, and save useful prompts for reuse.
+The Model Playground lets users chat directly with any pulled Ollama model, including quantized Gemma 4 variants, and save useful prompts for reuse. After a response is generated, the new model comparator can run the same prompt through a second local model, display both responses with side-by-side metrics such as length, latency, and similarity, and ask a judge model to summarize the differences.
 
 All inference calls go to http://127.0.0.1:11434 via Ollama. No cloud API keys, no telemetry, no subscription fees. The stack is built with Python, Streamlit for the desktop UI, and SQLite for persistence.
 
@@ -43,7 +43,7 @@ The most significant technical hurdle was Gemma 4's tendency to deviate from the
 
 We solved this by engineering a multi-layer tolerant parser rather than fine-tuning the model. Layer one attempts to extract an explicit Markdown summary table. Layer two falls back to counting category-specific headings. Layer three always preserves the raw Markdown output as the source of truth. Layer four logs parser confidence and flags low-confidence outputs for human review. For files that exceed context limits, we added a compact-prompt fallback that truncates code and requests a shorter review, logging when the fallback is triggered. This approach turned unreliable structured outputs into reliably actionable findings without losing the model's rich qualitative analysis.
 
-A secondary challenge was making Streamlit feel like a persistent desktop application rather than a transient script. Streamlit restarts clear UI state by default. We added a memory.py module with SQLite to persist webfetch settings, whitelist and blacklist entries, saved prompts, and the complete audit trail across restarts.
+A secondary challenge was making Streamlit feel like a persistent desktop application rather than a transient script. Streamlit restarts clear UI state by default. We added a memory.py module with SQLite to persist webfetch settings, whitelist and blacklist entries, saved prompts, model comparison history, and the complete audit trail across restarts.
 
 **Next steps**
 

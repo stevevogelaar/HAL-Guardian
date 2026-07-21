@@ -84,16 +84,16 @@ def _audit(limit: int = 50, **kwargs) -> Dict[str, Any]:
 
 
 def _compare_models(
-    active_model: str,
-    compare_model: str,
     target: str,
+    active_model: str = DEFAULT_MODEL,
+    compare_model: str = "",
     system: str = "",
     temperature: float = 0.2,
     deep_model: str = "",
     **kwargs,
 ) -> Dict[str, Any]:
     if not compare_model:
-        return {"ok": False, "error": "compare_model is required"}
+        return {"ok": False, "error": "compare_model is required (use --compare_model)"}
     result = compare_prompt(
         active_model=active_model,
         compare_model=compare_model,

@@ -634,6 +634,7 @@ elif page == "Subagent Console":
     - `review_dir` — batch-review all source files in a directory
     - `review_code` — review pasted code text
     - `scan` — scan untrusted text for prompt injection / encoded payloads
+    - `compare` — compare two local models on the same prompt
     - `health` — show Ollama status and action counts
     - `audit` — show recent audit log entries
 
@@ -644,6 +645,13 @@ elif page == "Subagent Console":
     4. Click **Run subagent** to execute.
     5. Use **Quick presets** for one-click demos.
     """)
+
+    with st.expander("Use HAL Guardian as an external agent tool"):
+        agent_prompt_path = Path(__file__).resolve().parent / "docs" / "AGENT_PROMPT.md"
+        if agent_prompt_path.exists():
+            st.markdown(agent_prompt_path.read_text(encoding="utf-8"))
+        else:
+            st.warning("Agent prompt guide not found at docs/AGENT_PROMPT.md")
 
     # Per-command examples
     _EXAMPLES = {
@@ -672,16 +680,22 @@ elif page == "Subagent Console":
             "powershell": 'python orchestrate.py scan "..." --source untrusted --deep true',
         },
         "health": {
-            "target": "",
+            "target": "(no target needed — returns environment status)",
             "modifiers": {},
             "python": 'run("health")',
             "powershell": 'python orchestrate.py health',
         },
         "audit": {
-            "target": "",
+            "target": "(no target needed — returns recent log entries)",
             "modifiers": {"limit": "20"},
             "python": 'run("audit", limit=20)',
             "powershell": 'python orchestrate.py audit --limit 20',
+        },
+        "compare": {
+            "target": "A farmer has a fox, a chicken, and a bag of grain...",
+            "modifiers": {"active_model": "gemma4:e2b", "compare_model": "gemma3:270m"},
+            "python": 'run("compare", target="...", active_model="gemma4:e2b", compare_model="gemma3:270m")',
+            "powershell": 'python orchestrate.py compare "..." --active_model gemma4:e2b --compare_model gemma3:270m',
         },
     }
 
@@ -701,6 +715,8 @@ elif page == "Subagent Console":
 
     with st.expander("Modifiers"):
         model = st.text_input("--model", value=ex["modifiers"].get("model", "gemma4:e2b"))
+        active_model = st.text_input("--active_model", value=ex["modifiers"].get("active_model", "gemma4:e2b"))
+        compare_model = st.text_input("--compare_model", value=ex["modifiers"].get("compare_model", ""))
         language = st.text_input("--language", value=ex["modifiers"].get("language", "python"))
         source = st.selectbox("--source", ["untrusted", "trusted", "unknown"], index=["untrusted", "trusted", "unknown"].index(ex["modifiers"].get("source", "untrusted")))
         decode = st.selectbox("--decode", ["true", "false"], index=0 if ex["modifiers"].get("decode", "true") == "true" else 1)
@@ -712,6 +728,10 @@ elif page == "Subagent Console":
     kwargs = {}
     if model:
         kwargs["model"] = model
+    if active_model:
+        kwargs["active_model"] = active_model
+    if compare_model:
+        kwargs["compare_model"] = compare_model
     if language:
         kwargs["language"] = language
     if source:

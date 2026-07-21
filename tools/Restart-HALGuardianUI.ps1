@@ -63,5 +63,11 @@ catch {
 }
 
 Write-Host "Starting HAL Guardian Streamlit on port $Port..."
+Write-Host "********************************************"
+Write-Host "DO NOT CLOSE THIS WINDOW"
+Write-Host "It is running the HAL Guardian server."
+Write-Host "Close the browser tab first, then press"
+Write-Host "Ctrl+C here and confirm Y to stop."
+Write-Host "********************************************"
 # Note: do not use --server.headless here so Streamlit opens the browser automatically.
 & $python -m streamlit run $app --server.port $Port

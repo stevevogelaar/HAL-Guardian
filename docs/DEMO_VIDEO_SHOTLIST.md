@@ -16,32 +16,35 @@
 |---|---|---|---|---|
 | 1 | Title card | Static title card with project name and subtitle | 0:00–0:10 | Neutral typography; no sales language |
 | 2 | Home page | HAL Guardian UI Home page; model status visible | 0:10–0:45 | Let viewer absorb the local-only framing |
-| 3 | Settings page | Webfetch toggle OFF; whitelist and warning visible | 0:45–1:10 | Move slowly; call out security model |
-| 4 | Architecture diagram | Optional static diagram of module layout | 1:10–1:40 | Can be skipped if narration is clear |
-| 5 | Code Guardian setup | Upload `bad_login.php`; select PHP language | 1:40–1:55 | Show file path in dialog |
-| 6 | Code Guardian thinking | Spinner / "Asking gemma4:e2b..." | 1:55–2:02 | Jump cut here |
-| 7 | Code Guardian results | Verdict, summary table, findings cards | 2:02–2:25 | Click one finding |
-| 8 | Code Guardian suggest fix | Expanded suggested fix block | 2:25–2:40 | Show replacement code |
-| 9 | Code Guardian export | Hover or click Export JSON / Markdown buttons | 2:40–2:48 | Show both options |
-| 10 | Code Guardian raw review | Expand raw Markdown review | 2:48–2:52 | Brief scroll |
-| 10 | Trust Shield setup | Paste suspicious email; set source `untrusted` | 2:45–3:00 | Use repo sample input |
-| 11 | Trust Shield quick scan | Findings and decoded payload | 3:00–3:15 | Highlight the Base64 decode |
-| 12 | Trust Shield deep scan | Enable deep scan; show model result | 3:15–3:30 | Jump cut here |
-| 13 | Trust Shield export | Hover or click Export JSON / Markdown buttons | 3:30–3:38 | Show both options |
-| 14 | Trust Shield sanitized text | Bottom panel with redacted input | 3:38–3:45 | Pause for readability |
-| 14 | Subagent Console setup | Command input `review_dir data/sample_code` | 3:45–3:55 | Show typing |
-| 15 | Subagent Console results | JSON envelope returned | 3:55–4:05 | Jump cut here |
-| 16 | Subagent Console details | Expand one review entry | 4:05–4:15 | Show structured fields |
-| 17 | Model Playground setup | Load starter prompt from dropdown | 4:15–4:25 | Show prompt text |
-| 18 | Model Playground response | Model output visible | 4:25–4:35 | Jump cut if needed |
-| 19 | Model Playground save | Save prompt; show persisted list | 4:35–4:42 | Quick action |
-| 20 | Model Playground export | Hover or click Export prompt library (JSON) button | 4:42–4:48 | Show JSON export option |
-| 20 | Webfetch setup | Trust Shield → Fetch URL; enter demo URL | 4:45–4:55 | URL: `itoversight.ca/Hal_Guardian/injection-test-page.html` |
-| 21 | Webfetch confirmation | Check proceed checkbox | 4:55–5:00 | Emphasize confirmation gate |
-| 22 | Webfetch scan results | Scan results for fetched page | 5:00–5:15 | Jump cut over fetch + model time |
-| 23 | Audit Engine | Scroll recent entries; expand one JSON object | 5:15–5:28 | Show local logging |
-| 24 | Audit Engine export | Hover or click Export JSON / CSV buttons | 5:28–5:36 | Show both options |
-| 25 | Home return / conclusion | Fade back to Home page | 5:36–5:45 | Final links visible |
+| 3 | Sidebar active model | Show Active model dropdown under Choose a module | 0:45–0:55 | Mention it drives Code Guardian, Trust Shield, and Model Playground |
+| 4 | Settings page | Webfetch toggle OFF; whitelist and warning visible | 0:55–1:15 | Move slowly; call out security model |
+| 5 | Architecture diagram | Optional static diagram of module layout | 1:15–1:40 | Can be skipped if narration is clear |
+| 6 | Code Guardian setup | Upload `bad_login.php`; select PHP language | 1:40–1:55 | Show file path in dialog |
+| 7 | Code Guardian thinking | Spinner / "Asking gemma4:e2b..." | 1:55–2:02 | Jump cut here |
+| 8 | Code Guardian results | Verdict, summary table, findings cards | 2:02–2:25 | Click one finding |
+| 9 | Code Guardian suggest fix | Expanded suggested fix block | 2:25–2:40 | Show replacement code |
+| 10 | Code Guardian export | Hover or click Export JSON / Markdown buttons | 2:40–2:48 | Show both options |
+| 11 | Code Guardian raw review | Expand raw Markdown review | 2:48–2:52 | Brief scroll |
+| 12 | Trust Shield setup | Paste suspicious email; set source `untrusted` | 2:52–3:05 | Use repo sample input |
+| 13 | Trust Shield quick scan | Findings and decoded payload | 3:05–3:18 | Highlight the Base64 decode |
+| 14 | Trust Shield deep scan | Enable deep scan; show model result | 3:18–3:30 | Jump cut here |
+| 15 | Trust Shield export | Hover or click Export JSON / Markdown buttons | 3:30–3:38 | Show both options |
+| 16 | Trust Shield sanitized text | Bottom panel with redacted input | 3:38–3:45 | Pause for readability |
+| 17 | Subagent Console setup | Command input `review_dir data/sample_code` | 3:45–3:55 | Show typing |
+| 18 | Subagent Console results | JSON envelope returned | 3:55–4:05 | Jump cut here |
+| 19 | Subagent Console details | Expand one review entry | 4:05–4:15 | Show structured fields |
+| 17 | Model Playground setup | Load reasoning puzzle starter prompt from dropdown; set temperature 0.8 | 4:15–4:25 | Show prompt text |
+| 18 | Model Playground response | Active model response visible | 4:25–4:35 | Jump cut if needed |
+| 19 | Model Playground compare | Select comparator model and click Compare | 4:35–4:45 | Excludes active model from dropdown |
+| 20 | Model Playground comparison | Side-by-side metrics and responses | 4:45–4:55 | Show similarity score |
+| 21 | Model Playground AI judge | Click AI compare; show judge summary | 4:55–5:05 | Jump cut over judge inference |
+| 22 | Model Playground export | Hover or click Export comparison (JSON) button | 5:05–5:12 | Show JSON export option |
+| 23 | Webfetch setup | Trust Shield → Fetch URL; enter demo URL | 5:12–5:20 | URL: `itoversight.ca/Hal_Guardian/injection-test-page.html` |
+| 24 | Webfetch confirmation | Check proceed checkbox | 5:20–5:25 | Emphasize confirmation gate |
+| 25 | Webfetch scan results | Scan results for fetched page | 5:25–5:38 | Jump cut over fetch + model time |
+| 26 | Audit Engine | Scroll recent entries; expand one JSON object | 5:38–5:48 | Show local logging |
+| 27 | Audit Engine export | Hover or click Export JSON / CSV buttons | 5:48–5:55 | Show both options |
+| 28 | Home return / conclusion | Fade back to Home page | 5:55–6:05 | Final links visible |
 
 ---
 
