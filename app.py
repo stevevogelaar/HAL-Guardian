@@ -1004,39 +1004,44 @@ elif page == "Model Playground":
                                 compare_tokens_per_sec=full_cmp["compare_model"]["tokens_per_sec"],
                                 similarity=full_cmp["similarity"],
                             )
-                            last_comparison = full_cmp
                             st.session_state["last_comparison_id"] = comparison_id
                             st.session_state["last_comparison"] = full_cmp
                             st.success(f"Comparison saved — similarity {full_cmp['similarity_pct']}")
-                            # Side-by-side metrics
-                            col_a, col_b = st.columns(2)
-                            with col_a:
-                                st.markdown(f"### {model}")
-                                st.metric("Chars", full_cmp["active_model"]["chars"])
-                                st.metric("Words", full_cmp["active_model"]["words"])
-                                with st.expander("Response"):
-                                    st.markdown(full_cmp["active_model"]["response"])
-                            with col_b:
-                                st.markdown(f"### {compare_model}")
-                                st.metric("Latency", f"{full_cmp['compare_model']['latency_ms']} ms")
-                                st.metric("Chars", full_cmp["compare_model"]["chars"])
-                                st.metric("Words", full_cmp["compare_model"]["words"])
-                                st.metric("Tokens/sec", full_cmp["compare_model"]["tokens_per_sec"])
-                                with st.expander("Response"):
-                                    st.markdown(full_cmp["compare_model"]["response"])
-                            st.markdown(f"**Similarity:** {full_cmp['similarity_pct']}")
-                            st.download_button(
-                                label="Export comparison (JSON)",
-                                data=json.dumps(full_cmp, indent=2, default=str),
-                                file_name=f"comparison_{model}_vs_{compare_model}.json",
-                                mime="application/json",
-                                key="export_comparison_json",
-                            )
                     except Exception as e:
                         st.error(f"Comparison error: {e}")
 
+    # Display persisted comparison results (survives reruns from AI compare, etc.)
+    last_comparison = st.session_state.get("last_comparison")
+    if last_comparison:
+        full_cmp = last_comparison
+        compare_model_name = full_cmp["compare_model"]["model"]
+        st.markdown("### Comparison results")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown(f"### {full_cmp['active_model']['model']}")
+            st.metric("Chars", full_cmp["active_model"]["chars"])
+            st.metric("Words", full_cmp["active_model"]["words"])
+            with st.expander("Response"):
+                st.markdown(full_cmp["active_model"]["response"])
+        with col_b:
+            st.markdown(f"### {compare_model_name}")
+            st.metric("Latency", f"{full_cmp['compare_model']['latency_ms']} ms")
+            st.metric("Chars", full_cmp["compare_model"]["chars"])
+            st.metric("Words", full_cmp["compare_model"]["words"])
+            st.metric("Tokens/sec", full_cmp["compare_model"]["tokens_per_sec"])
+            with st.expander("Response"):
+                st.markdown(full_cmp["compare_model"]["response"])
+        st.markdown(f"**Similarity:** {full_cmp['similarity_pct']}")
+        st.download_button(
+            label="Export comparison (JSON)",
+            data=json.dumps(full_cmp, indent=2, default=str),
+            file_name=f"comparison_{full_cmp['active_model']['model']}_vs_{compare_model_name}.json",
+            mime="application/json",
+            key="export_comparison_json",
+        )
+
     # AI summary for the most recent comparison (in-session or recalled)
-    last_comparison = last_comparison or st.session_state.get("last_comparison")
+    comparison_id = comparison_id or st.session_state.get("last_comparison_id")
     if last_comparison:
         judge = judge_model or model
         if st.button("AI compare"):

@@ -34,7 +34,7 @@
 **Script:**
 > The architecture is straightforward. The front end is a Streamlit application. The back end is a set of Python modules that build prompts, call Ollama, parse responses, log actions, and persist settings.
 >
-> The main pages map to those modules. Code Guardian handles code review. Trust Shield handles input scanning. The Subagent Console exposes every module as a callable command. Audit Engine shows the local logs. Model Playground is a free-form chat for testing prompts. Settings controls the optional webfetch feature.
+> The main pages map to those modules. Code Guardian handles code review. Trust Shield handles input scanning. The Subagent Console exposes every module as a callable command. Audit Engine shows the local logs. Model Playground is a free-form chat and model comparator for testing prompts. Settings controls the optional webfetch feature.
 >
 > Persistence is handled through JSONL files and SQLite. Audit entries, saved prompts, webfetch settings, and the whitelist are all stored locally and survive application restarts.
 >
@@ -124,25 +124,32 @@
 
 ---
 
-## Section 6 — Model Playground (4:15–4:45)
+## Section 6 — Model Playground (4:15–4:55)
 
-**Shot:** Model Playground page. Load a starter prompt and save it.
+**Shot:** Model Playground page. Load the reasoning puzzle starter prompt, send it, then compare with a second model.
 
 **Script:**
-> The Model Playground is a free-form chat interface for any local Ollama model. It is useful for testing prompts, comparing model behavior, or developing new instructions for the other modules.
+> The Model Playground is a free-form chat interface for any local Ollama model. The active model is selected from the sidebar and is shared across Code Guardian, Trust Shield, and the playground.
 >
-> Users can load starter prompts from a JSON library, adjust the temperature, send messages, and save useful prompts to SQLite. Saved prompts persist across restarts and can be exported as JSON.
+> Users can load starter prompts from a JSON library, adjust the temperature, and send messages. After a response arrives, the new model comparator can run the same prompt through a second model and display side-by-side metrics and an AI judge summary.
+>
+> Here we load the river-crossing reasoning puzzle at a higher temperature to stress-test model behavior. [Jump cut to response] The active model returns a correct step-by-step solution.
+>
+> We then choose a second model and click Compare. [Jump cut to comparison] The comparator shows both responses, a similarity score, and basic metrics. Finally, the AI judge summarizes the key differences between the two outputs.
 
 **On-screen:**
 - Starter prompt loaded from dropdown
-- Temperature slider
-- Model response
-- Save action and saved prompt list
-- Export button for saved prompts
+- Temperature set to 0.8
+- Active model response
+- "Compare with another model" section
+- Comparator model dropdown
+- AI judge model dropdown
+- Side-by-side comparison metrics and responses
+- AI comparison summary
 
 ---
 
-## Section 7 — Webfetch in Action (4:45–5:15)
+## Section 7 — Webfetch in Action (4:55–5:25)
 
 **Shot:** Trust Shield → Fetch URL. Use the public demo page.
 
@@ -161,7 +168,7 @@
 
 ---
 
-## Section 8 — Audit Engine and Conclusion (5:15–5:40)
+## Section 8 — Audit Engine and Conclusion (5:25–5:50)
 
 **Shot:** Audit Engine page, then return to Home page.
 
