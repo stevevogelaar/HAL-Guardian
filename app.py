@@ -1081,6 +1081,10 @@ elif page == "Model Playground":
                     if summary.get("ok"):
                         st.markdown("### AI comparison summary")
                         st.markdown(summary["summary"])
+                        # Merge summary into session state so export JSON includes it
+                        st.session_state["last_comparison"]["ai_summary"] = summary["summary"]
+                        st.session_state["last_comparison"]["ai_judge_model"] = judge
+                        st.session_state["last_comparison"]["ai_latency_ms"] = summary["latency_ms"]
                         if comparison_id:
                             update_comparison_ai_summary(
                                 row_id=comparison_id,
