@@ -3,6 +3,7 @@ HAL Guardian Streamlit Application
 Edge/on-device security suite powered by Gemma 4.
 """
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
