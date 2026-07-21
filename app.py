@@ -8,11 +8,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import streamlit as st
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
-
-import streamlit as st
 
 # Ensure module imports work whether run as `streamlit run app.py` or via package
 sys.path.insert(0, str(Path(__file__).resolve().parent))

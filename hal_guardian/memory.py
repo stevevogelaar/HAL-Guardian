@@ -19,6 +19,10 @@ from .config import DATA_DIR
 DB_PATH = Path(DATA_DIR) / "hal_guardian.db"
 
 
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 def _ensure_db() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
@@ -375,10 +379,10 @@ def save_comparison(
              compare_model, compare_response, compare_latency_ms, compare_chars, compare_words,
              compare_lines, compare_tokens_per_sec, similarity, ai_summary, ai_judge_model,
              ai_latency_ms)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES             (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                _now_iso(),
+                datetime.now(timezone.utc).isoformat(),
                 prompt,
                 system_prompt,
                 temperature,
