@@ -2,14 +2,27 @@
 
 ## Install (first time only)
 
-1. Install Python 3.12+ and Ollama.
-2. Pull the default model:
+1. **Install Python 3.12+** from https://www.python.org/downloads/
+
+2. **Install Ollama** (local model server):
+   - Download: https://ollama.com/download
+   - Run the installer and follow the prompts
+   - Verify: `ollama --version`
+
+3. **Pull a model** (downloads to your local machine):
 
 ```powershell
+# Gemma 4 2B — fast, good for demos (recommended for hackathon)
 ollama pull gemma4:e2b
+
+# Gemma 4 4B — deeper reasoning, slower
+ollama pull gemma4:4b
+
+# Gemma 3 270M — tiny, good for comparison testing
+ollama pull gemma3:270m
 ```
 
-3. Install Python dependencies from the project root:
+4. **Install Python dependencies** from the project root:
 
 ```powershell
 & "C:\Users\Steve Vogelaar\AppData\Local\Programs\Python\Python312\python.exe" -m pip install -r requirements.txt

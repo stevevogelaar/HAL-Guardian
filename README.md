@@ -112,15 +112,16 @@ See [`QUICKSTART.md`](QUICKSTART.md) for the fastest path from install to runnin
 
 ### Prerequisites
 - Python 3.12+
-- Ollama installed and running
+- [Ollama](https://ollama.com) installed and running (free, open-source, cross-platform local model server)
 - Gemma 4 model pulled (e.g., `gemma4:e2b` or `gemma4:4b`)
 
-### Install
+### Install Ollama and pull a model
 ```powershell
-# Pull the default local model
+# 1. Download and install Ollama from https://ollama.com/download
+# 2. Pull the default local model
 ollama pull gemma4:e2b
 
-# Install Python dependencies
+# 3. Install Python dependencies
 python -m pip install -r requirements.txt
 ```
 

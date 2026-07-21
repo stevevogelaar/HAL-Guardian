@@ -1281,11 +1281,33 @@ elif page == "Manual":
     ---
 
     ### Adding Models
-    HAL Guardian detects any model you have pulled in Ollama. To add a model, run in PowerShell:
-    ```powershell
-    ollama pull gemma4:4b
-    ```
-    Then restart HAL Guardian and select it from the **Active model** dropdown in the sidebar.
+    HAL Guardian detects any model you have pulled in Ollama. To add a model:
+
+    1. **Install Ollama** (if not already installed):
+       - Download: https://ollama.com/download
+       - Run the installer and follow the prompts
+       - Verify: `ollama --version`
+
+    2. **Pull a model** (downloads to your local machine):
+       ```powershell
+       # Gemma 4 2B — fast, good for demos (recommended for hackathon)
+       ollama pull gemma4:e2b
+
+       # Gemma 4 4B — deeper reasoning, slower
+       ollama pull gemma4:4b
+
+       # Gemma 3 270M — tiny, good for comparison testing
+       ollama pull gemma3:270m
+       ```
+
+    3. **Start the Ollama server** (keep this running in its own terminal):
+       ```powershell
+       ollama serve
+       ```
+
+    4. **Restart HAL Guardian** and select the model from the **Active model** dropdown in the sidebar.
+
+    > **Note:** All model weights stay on your local disk. No cloud account, API key, or internet connection is required after the initial pull.
 
     ---
 
