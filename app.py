@@ -85,7 +85,7 @@ with st.sidebar:
 
     st.markdown("#### Active model")
     global_model = st.selectbox(
-        "Model used by Code Guardian and Trust Shield deep scan",
+        "Active model for Code Guardian, Trust Shield deep scan, and Model Playground",
         options=_available_models,
         index=_available_models.index(_selected_default) if _selected_default in _available_models else 0,
         help="Choose any model pulled in your local Ollama instance. Gemma 4 is recommended for hackathon submission.",
@@ -915,13 +915,19 @@ elif page == "Model Playground":
                 st.session_state["mp_last_system"] = system
                 st.session_state["mp_last_prompt"] = prompt
                 st.session_state["mp_last_temperature"] = temperature
-                st.markdown("### Response")
-                st.markdown(first_response)
-                st.divider()
-                st.markdown("### Raw response")
-                st.text(first_response)
+                st.session_state["last_comparison"] = None
+                st.session_state["last_comparison_id"] = None
             except Exception as e:
                 st.error(f"Model error: {e}")
+
+    # Display the active response whenever it exists (preserved across reruns)
+    first_response = first_response or st.session_state.get("mp_last_response")
+    if first_response:
+        st.markdown("### Response")
+        st.markdown(first_response)
+        st.divider()
+        st.markdown("### Raw response")
+        st.text(first_response)
 
     # Post-response comparison section
     if first_response or st.session_state.get("mp_last_response"):
