@@ -7,6 +7,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 import streamlit as st
 
 # Ensure module imports work whether run as `streamlit run app.py` or via package
@@ -894,13 +898,16 @@ elif page == "Model Playground":
             else:
                 st.warning("No prompt library found.")
     with c2:
-        chosen = st.selectbox("Load example", ["(none)"] + [p.get("name", "untitled") for p in starters + saved])
-        if chosen != "(none)":
+        example_options = ["(none)"] + [p.get("name", "untitled") for p in starters + saved]
+        chosen = st.selectbox("Load example", example_options, key="mp_load_example")
+        if chosen != "(none)" and chosen != st.session_state.get("mp_last_loaded_example", ""):
             for p in starters + saved:
                 if p.get("name") == chosen:
                     st.session_state.mp_system = p.get("system", "")
                     st.session_state.mp_prompt = p.get("prompt", "")
                     st.session_state.mp_temperature = p.get("temperature", 0.2)
+                    st.session_state.mp_last_loaded_example = chosen
+                    st.rerun()
                     break
     with c3:
         with st.popover("Save prompt"):
@@ -964,6 +971,7 @@ elif page == "Model Playground":
                             similarity=cmp["similarity"],
                         )
                         last_comparison = cmp
+                        last_comparison["timestamp"] = _now_iso()
                         st.session_state["last_comparison_id"] = comparison_id
                         st.success(f"Comparison saved (id {comparison_id}) — similarity {cmp['similarity_pct']}")
                         # Side-by-side metrics

@@ -31,7 +31,7 @@
     "name": "Reasoning puzzle",
     "tags": ["reasoning"],
     "system": "You are a careful reasoning assistant.",
-    "prompt": "A farmer has 17 sheep and all but 9 die. How many sheep are left? Explain your reasoning.",
-    "temperature": 0.2
+    "prompt": "A farmer has a fox, a chicken, and a bag of grain. He needs to cross a river in a small boat that can only carry him and one item at a time. If left alone, the fox will eat the chicken, and the chicken will eat the grain. How does he get everything across safely? Show your step-by-step reasoning and confirm there are no contradictions.",
+    "temperature": 0.8
   }
 ]

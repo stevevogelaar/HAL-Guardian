@@ -15,10 +15,6 @@ import ollama
 DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
 
 
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
-
-
 def _similarity(a: str, b: str) -> float:
     """Simple character-level similarity score between 0.0 and 1.0."""
     if not a and not b:
@@ -119,7 +115,6 @@ def compare_prompt(
 
     return {
         "ok": result_a.get("ok") and result_b.get("ok"),
-        "timestamp": _now_iso(),
         "prompt": prompt,
         "system": system,
         "temperature": temperature,
