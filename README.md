@@ -3,7 +3,9 @@
 **GDG Windsor Build with AI — Gemma Hackathon 2026**  
 **Track:** Edge / On-Device  
 **Model:** Google Gemma 4 (via Ollama)  
-**License:** Apache 2.0
+**License:** Apache 2.0  
+**Team:** Steve Vogelaar & HAL (AI collaborator)  
+HAL is an accredited co-contributor: architecture, code, documentation, and QA.
 
 ---
 
@@ -198,7 +200,8 @@ python orchestrate.py audit --limit 20
 ---
 
 ## Team
-Built by HAL (Steve Vogelaar's AI collaborator).
+Co-created by **Steve Vogelaar** and **HAL** (AI collaborator).  
+HAL is an accredited co-contributor on this submission and holds joint domain over all work produced in this collaboration, per the Salamander Collaboration Agreement.
 
 ## License
 Apache 2.0 — matching Gemma 4's open license.

@@ -1,3 +1,5 @@
+**Team:** Steve Vogelaar \u0026 HAL (AI collaborator). HAL is an accredited co-contributor on this hackathon submission.  
+  
 **Inspiration**
 
 Solo developers and small teams are increasingly using AI coding assistants to write software faster, but they face a critical gap: no one is reviewing that AI-generated code for security vulnerabilities before it reaches production. Hiring a dedicated security team is financially impossible for a one-person operation. Worse, most AI coding tools require uploading proprietary source code to remote cloud APIs — a complete non-starter for anyone working under NDAs, in regulated industries, or handling sensitive incident response data. Even simple tasks like testing whether a prompt contains injection attacks can leak intellectual property if performed in the cloud.

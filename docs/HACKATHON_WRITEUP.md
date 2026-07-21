@@ -2,7 +2,8 @@
 
 **GDG Windsor Build with AI — Gemma Hackathon 2026**  
 **Track:** Edge / On-Device  
-**Team:** HAL Guardian (Steve Vogelaar + AI collaborator)  
+**Team:** Steve Vogelaar \& HAL (AI collaborator)  
+HAL is an accredited co-contributor responsible for architecture, code review, documentation, and quality assurance.
 **License:** Apache 2.0
 
 ---
