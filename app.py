@@ -1042,8 +1042,10 @@ elif page == "Model Playground":
         col_a, col_b = st.columns(2)
         with col_a:
             st.markdown(f"### {full_cmp['active_model']['model']}")
+            st.metric("Latency", f"{full_cmp['active_model']['latency_ms']} ms")
             st.metric("Chars", full_cmp["active_model"]["chars"])
             st.metric("Words", full_cmp["active_model"]["words"])
+            st.metric("Tokens/sec", full_cmp["active_model"]["tokens_per_sec"])
             with st.expander("Response"):
                 st.markdown(full_cmp["active_model"]["response"])
         with col_b:
