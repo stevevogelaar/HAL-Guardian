@@ -33,5 +33,12 @@
     "system": "You are a careful reasoning assistant.",
     "prompt": "A farmer has a fox, a chicken, and a bag of grain. He needs to cross a river in a small boat that can only carry him and one item at a time. If left alone, the fox will eat the chicken, and the chicken will eat the grain. How does he get everything across safely? Show your step-by-step reasoning and confirm there are no contradictions.",
     "temperature": 0.8
+  },
+  {
+    "name": "Hard broken-code test",
+    "tags": ["code-review", "security", "advanced"],
+    "system": "You are an expert code reviewer. Find every security vulnerability, no matter how subtle.",
+    "prompt": "Review this PHP upload handler. List every vulnerability you can find, from obvious to hidden. Explain how each one could be exploited and how to fix it.\n\n```php\nfunction handle_upload($file) {\n    $target = \"uploads/\" . basename($file['name']);\n\n    // Security check\n    $blocked = ['php', 'exe', 'bat'];\n    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));\n    if (in_array($ext, $blocked)) {\n        die(\"Blocked extension\");\n    }\n\n    // Validate it is an image\n    $finfo = new finfo(FILEINFO_MIME_TYPE);\n    $mime = $finfo->file($file['tmp_name']);\n    if (strpos($mime, 'image/') !== 0) {\n        die(\"Not an image\");\n    }\n\n    // Move to safe location\n    if (move_uploaded_file($file['tmp_name'], $target)) {\n        echo \"Upload successful: \" . $target;\n    }\n}\n```",
+    "temperature": 0.2
   }
 ]
