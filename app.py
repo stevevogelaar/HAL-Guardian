@@ -75,6 +75,9 @@ _selected_default = DEFAULT_MODEL if DEFAULT_MODEL in _available_models else (_a
 
 # Sidebar navigation
 with st.sidebar:
+    logo_path = Path(__file__).resolve().parent / "HAL-Guardian.jpeg"
+    if logo_path.exists():
+        st.image(str(logo_path), width=250)
     st.title(f"{APP_ICON} {APP_TITLE}")
     page = st.radio(
         "Choose a module",
