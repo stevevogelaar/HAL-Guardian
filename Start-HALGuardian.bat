@@ -8,6 +8,10 @@ cd /d "%PROJECT_ROOT%"
 
 set POWERSHELL=powershell.exe
 set PS_SCRIPT=%PROJECT_ROOT%tools\Restart-HALGuardianUI.ps1
+set LOG_FILE=%PROJECT_ROOT%logs\start-error.log
+
+REM Ensure logs directory exists
+if not exist "%PROJECT_ROOT%logs" mkdir "%PROJECT_ROOT%logs"
 
 cls
 echo.
@@ -36,10 +40,14 @@ if not exist "%PS_SCRIPT%" (
     exit /b 1
 )
 
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%"
+REM Run the PowerShell script and capture ALL output (stdout + stderr) to log file
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%" >> "%LOG_FILE%" 2>&1
 
 if %errorlevel% neq 0 (
     echo.
-    echo HAL Guardian exited with an error.
+    echo HAL Guardian exited with an error. Code: %errorlevel%
+    echo See log: %LOG_FILE%
+    type "%LOG_FILE%"
+    echo.
     pause
 )
