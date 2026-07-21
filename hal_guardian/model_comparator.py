@@ -6,6 +6,7 @@ optionally ask a third "judge" model to summarize the differences.
 """
 import re
 import time
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional
 
@@ -15,8 +16,6 @@ DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
 
 
 def _now_iso() -> str:
-    from datetime import datetime, timezone
-
     return datetime.now(timezone.utc).isoformat()
 
 
