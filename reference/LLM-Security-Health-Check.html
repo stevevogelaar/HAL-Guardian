@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Oversight — LLM Security Health Check</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1a1a2e;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 3px solid #0066cc;
+        }
+        .header h1 {
+            color: #1a1a2e;
+            font-size: 2.2em;
+            margin-bottom: 8px;
+        }
+        .header .subtitle {
+            color: #0066cc;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .tagline {
+            text-align: center;
+            font-size: 1.1em;
+            color: #555;
+            margin: 20px 0 30px;
+            font-style: italic;
+        }
+        .section {
+            margin: 30px 0;
+        }
+        .section h2 {
+            color: #0066cc;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            padding-left: 15px;
+            border-left: 4px solid #0066cc;
+        }
+        .price-box {
+            background: #f0f7ff;
+            border: 2px solid #0066cc;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .price {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: #0066cc;
+        }
+        .price-note {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 10px 0 10px 35px;
+            position: relative;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .owasp-badge {
+            display: inline-block;
+            background: #1a1a2e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 5px;
+        }
+        .cta {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        .cta h3 {
+            color: #1a1a2e;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+        .cta .contact {
+            font-size: 1.1em;
+            color: #555;
+        }
+        .cta .contact strong {
+            color: #0066cc;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.85em;
+            color: #888;
+        }
+        .highlight-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>IT Oversight</h1>
+            <div class="subtitle">LLM Security Health Check</div>
+        </div>
+
+        <p class="tagline">
+            "Companies are adopting AI faster than they're securing it. 
+            We audit against the OWASP Top 10 for LLM Applications — 
+            so you know exactly where you stand."
+        </p>
+
+        <div class="price-box">
+            <div class="price">$1,500 – $3,000</div>
+            <div class="price-note">2-Day Paid Discovery Sprint · Fixed Scope · Milestone Billed</div>
+        </div>
+
+        <div class="section">
+            <h2>What We Audit (OWASP Top 10 Aligned)</h2>
+            <ul class="checklist">
+                <li><span class="owasp-badge">LLM01</span> Prompt Injection — test chatbots, inputs, and boundaries</li>
+                <li><span class="owasp-badge">LLM02</span> Sensitive Information Disclosure — scan for secrets, PII, API keys</li>
+                <li><span class="owasp-badge">LLM03</span> Supply Chain — review model provenance, dependencies, LoRA adapters</li>
+                <li><span class="owasp-badge">LLM05</span> Improper Output Handling — validate downstream code that processes LLM outputs</li>
+                <li><span class="owasp-badge">LLM07</span> System Prompt Leakage — test for hidden instruction exposure</li>
+                <li><span class="owasp-badge">LLM10</span> Unbounded Consumption — check for DoS, resource exhaustion, cost spikes</li>
+            </ul>
+        </div>
+
+        <div class="highlight-box">
+            <strong>Why IT Oversight?</strong> We built HAL Guardian — a privacy-first, 
+            fully offline AI security suite that runs local models. We didn't read OWASP first 
+            and then copy it. We built from real-world security problems we faced every day. 
+            When we found the OWASP Top 10, it validated we were asking the right questions.
+        </div>
+
+        <div class="section">
+            <h2>What You Get</h2>
+            <ul class="checklist">
+                <li>Executive summary with risk scoring (Critical / High / Medium / Low)</li>
+                <li>Detailed findings mapped to OWASP Top 10 for LLMs</li>
+                <li>Prioritized remediation roadmap with effort estimates</li>
+                <li>Live demo of HAL Guardian on your code (optional)</li>
+                <li>90-day validation plan: 15 interviews, 3 pilots, 30% close rate</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Beyond the Sprint: The Offer Ladder</h2>
+            <p style="margin-bottom:15px">
+                <strong>Copilot ($550–$1,400/month):</strong> Deploy HAL Guardian on dev machines, 
+                monthly audit reports, RAG security layer review, AI agency governance.
+            </p>
+            <p>
+                <strong>Foundation ($5K–$15K):</strong> Custom LLM security policy, 
+                AI red team retainer (quarterly adversarial testing), data integrity pipeline 
+                for MLOps, CI/CD integration.
+            </p>
+        </div>
+
+        <div class="cta">
+            <h3>Ready to Know Where You Stand?</h3>
+            <p class="contact">
+                <strong>Steve Vogelaar</strong> <br>
+                steve.vogelaar@gmail.com <br>
+                linkedin.com/in/steve-vogelaar-540599423 <br>
+                <br>
+                <em>HAL (AI Collaborator) available for demo.</em>
+            </p>
+        </div>
+
+        <div class="footer">
+            IT Oversight · Windsor, Ontario · Privacy-First AI Security · <br>
+            Powered by HAL Guardian · Local-First · Apache 2.0
+        </div>
+    </div>
+</body>
+</html>
