@@ -19,8 +19,8 @@ echo ============================================
 echo   HAL Guardian - Local AI Security Suite
 echo ============================================
 echo.
-echo Flushing stale HAL Guardian / Streamlit processes...
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Get-Process -Name 'python','streamlit' -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 2"
+echo Flushing stale HAL Guardian processes...
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Get-Process -Name 'python','streamlit' -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*HAL-Guardian*' } | Stop-Process -Force; Start-Sleep -Seconds 2"
 echo.
 echo.
 echo ********************************************
